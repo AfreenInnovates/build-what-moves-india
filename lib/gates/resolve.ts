@@ -77,6 +77,7 @@ export function resolve(spec: GateSpec, facts: CaseFacts): Resolution {
     route: route.get(gate.id) ?? null,
     actor: route.get(gate.id)?.actor ?? null,
     latencyDays: route.get(gate.id)?.latencyDays ?? 0,
+    provenance: route.get(gate.id)?.provenance ?? null,
     onCriticalPath: onPath.has(gate.id),
   }));
 

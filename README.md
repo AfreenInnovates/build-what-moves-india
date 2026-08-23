@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Seven Gates
 
-## Getting Started
+Find out what is blocking an EPF withdrawal **before** filing, not after being rejected.
 
-First, run the development server:
+EPFO settles over five crore claims a year and rejects roughly one in five, most often
+because a name is spelled differently across records that were never built to match.
+This puts all seven blocking conditions on one page, in dependency order, and says who
+has to act on each one — you, your employer, or EPFO.
+
+## Running it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Needs `.env` with `DATABASE_URL`, `GROQ_API_KEY` and `SARVAM_API_KEY`. See `.env.example`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Useful scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+|---|---|
+| `npm run db:seed` | Seed the six demo members from `fixtures/data/*.json` |
+| `npm run db:dump` | Print every table's contents |
+| `npm run spec:publish` | Write the current gate spec into the `gate_specs` table |
+| `npm run spine` | Render the gate spine for each member in the terminal |
+| `npm run fixtures:build` | Regenerate the synthetic document PNGs |
+| `npm test` | Gate resolver and matcher unit tests |
 
-## Learn More
+## How it is put together
 
-To learn more about Next.js, take a look at the following resources:
+- `lib/gates/spec.ts` — the seven gates as **data**, with a small JSON-serialisable
+  predicate language. Adding a gate is a config change, not a release.
+- `lib/gates/resolve.ts` — pure resolver: facts in, ordered gates and a day count out,
+  computed along the critical path through the dependency graph.
+- `lib/epfo-screens.ts` — the real EPFO screens, field for field, with an honest note
+  on every step we substitute.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Nothing here talks to EPFO. See `/whats-mocked` for exactly what is real and what is not.

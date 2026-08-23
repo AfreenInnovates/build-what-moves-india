@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { chunkForSpeech, recordWav, type WavRecorder } from './audio';
 
 interface GateInfo {
   id: string;
@@ -36,67 +37,179 @@ export function Assistant({
 }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [loadedHistory, setLoadedHistory] = useState(false);
   const [input, setInput] = useState('');
+  const [interim, setInterim] = useState('');
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [refining, setRefining] = useState(false);
 
   const [tour, setTour] = useState<TourStep[] | null>(null);
   const [tourAt, setTourAt] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLTextAreaElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speakAbortRef = useRef<AbortController | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const recRef = useRef<{ stop: () => void } | null>(null);
+  const wavRef = useRef<WavRecorder | null>(null);
+  const refineRef = useRef<((b: Blob) => void) | null>(null);
 
   const firstName = member.name.split(' ')[0];
+
+  /** What is actually in the box, settled words plus whatever is still being said. */
+  const composed = (input + (interim ? (input ? ' ' : '') + interim : '')).trim();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, busy]);
 
+  // the conversation belongs to the case, so it survives a refresh
+  useEffect(() => {
+    if (!open || loadedHistory) return;
+    setLoadedHistory(true);
+    fetch('/api/assistant/history')
+      .then((r) => r.json())
+      .then((j) => j.messages?.length && setMsgs(j.messages))
+      .catch(() => {});
+  }, [open, loadedHistory]);
+
+  // the box grows with its contents instead of scrolling inside one line
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
+  }, [input, interim, open]);
+
   // ---------------------------------------------------------------- speaking
   const stopSpeech = useCallback(() => {
+    speakAbortRef.current?.abort();
+    speakAbortRef.current = null;
     audioRef.current?.pause();
     audioRef.current = null;
     if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+    setSpeaking(false);
   }, []);
 
+  const fetchClip = useCallback(async (text: string, signal: AbortSignal) => {
+    const r = await fetch('/api/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal,
+    });
+    const j = await r.json();
+    return j.audio as string | null;
+  }, []);
+
+  /**
+   * Speaks the first sentence as soon as it is ready and fetches the rest while
+   * that plays. Sarvam answers a short line in about a second but takes four or
+   * more for a paragraph, so sending the whole reply at once meant the panel
+   * said "speaking" and then sat silent.
+   */
   const speak = useCallback(
     async (text: string) => {
       if (muted || !text) return;
       stopSpeech();
+
+      const controller = new AbortController();
+      speakAbortRef.current = controller;
+      const parts = chunkForSpeech(text);
+      setSpeaking(true);
+
       try {
-        const r = await fetch('/api/speak', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text }),
-        });
-        const j = await r.json();
-        if (j.audio) {
-          const a = new Audio(`data:audio/wav;base64,${j.audio}`);
+        let next = fetchClip(parts[0], controller.signal);
+
+        for (let i = 0; i < parts.length; i++) {
+          const b64 = await next;
+          if (controller.signal.aborted) return;
+          // start the following clip downloading while this one plays
+          next =
+            i + 1 < parts.length
+              ? fetchClip(parts[i + 1], controller.signal)
+              : Promise.resolve(null);
+
+          if (!b64) {
+            if (i === 0 && typeof speechSynthesis !== 'undefined') {
+              const u = new SpeechSynthesisUtterance(text);
+              u.rate = 1.02;
+              u.onend = () => setSpeaking(false);
+              speechSynthesis.speak(u);
+              return;
+            }
+            continue;
+          }
+
+          const a = new Audio(`data:audio/wav;base64,${b64}`);
           audioRef.current = a;
-          await a.play();
-          return;
+          await new Promise<void>((resolve) => {
+            a.onended = () => resolve();
+            a.onerror = () => resolve();
+            a.play().catch(() => resolve());
+          });
+          if (controller.signal.aborted) return;
         }
       } catch {
-        /* fall through to the browser's own voice */
-      }
-      if (typeof speechSynthesis !== 'undefined') {
-        const u = new SpeechSynthesisUtterance(text);
-        u.rate = 1.02;
-        speechSynthesis.speak(u);
+        /* aborted or offline */
+      } finally {
+        if (!controller.signal.aborted) setSpeaking(false);
       }
     },
-    [muted, stopSpeech],
+    [muted, stopSpeech, fetchClip],
   );
 
   // ---------------------------------------------------------------- listening
+  const stopListening = useCallback(() => {
+    recRef.current?.stop();
+    recRef.current = null;
+    const wav = wavRef.current;
+    wavRef.current = null;
+    wav?.stop().then((blob) => blob && refineRef.current?.(blob));
+    setListening(false);
+    setInterim('');
+  }, []);
+
+  /**
+   * Sarvam gets the last word, literally. The browser engine drives the live
+   * display because Sarvam's API only answers once you stop talking — but the
+   * browser is poor at Indian names and code-mixed speech, so what finally lands
+   * in the box is Sarvam's transcript whenever it returns one.
+   */
+  const refineWithSarvam = useCallback(async (blob: Blob) => {
+    if (blob.size < 2000) return;
+    setRefining(true);
+    try {
+      const fd = new FormData();
+      fd.append('audio', blob, 'speech.wav');
+      fd.append('language', 'unknown');
+      const r = await fetch('/api/listen', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (j.transcript?.trim()) setInput(j.transcript.trim());
+    } catch {
+      /* keep whatever the browser heard */
+    } finally {
+      setRefining(false);
+    }
+  }, []);
+
+  refineRef.current = refineWithSarvam;
+
   const listen = useCallback(() => {
+    if (listening) return stopListening();
+
+    type Res = { isFinal: boolean; 0: { transcript: string } };
     type SR = new () => {
       lang: string;
+      continuous: boolean;
       interimResults: boolean;
       start: () => void;
       stop: () => void;
-      onresult: ((e: { results: { 0: { 0: { transcript: string } } } }) => void) | null;
+      onresult: ((e: { resultIndex: number; results: ArrayLike<Res> }) => void) | null;
       onend: (() => void) | null;
       onerror: (() => void) | null;
     };
@@ -109,29 +222,75 @@ export function Assistant({
       ]);
       return;
     }
+
     const rec = new Ctor();
     rec.lang = 'en-IN';
-    rec.interimResults = false;
-    rec.onresult = (e) => setInput(e.results[0][0].transcript);
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    let settled = '';
+    rec.onresult = (e) => {
+      let pending = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i];
+        if (res.isFinal) settled += res[0].transcript;
+        else pending += res[0].transcript;
+      }
+      setInput(settled.trim());
+      setInterim(pending);
+    };
+    const finish = () => {
+      setListening(false);
+      setInterim('');
+      recRef.current = null;
+    };
+    rec.onend = finish;
+    rec.onerror = finish;
+
+    recRef.current = rec;
     setListening(true);
     rec.start();
-  }, []);
+
+    // capture the same audio as WAV, which is what Sarvam accepts
+    recordWav()
+      .then((rec) => {
+        wavRef.current = rec;
+      })
+      .catch(() => {
+        /* browser transcript only */
+      });
+  }, [listening, stopListening]);
 
   // ------------------------------------------------------------------- asking
+  const stopEverything = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    stopSpeech();
+    setBusy(false);
+  }, [stopSpeech]);
+
   const ask = useCallback(
     async (text: string) => {
       const q = text.trim();
       if (!q || busy) return;
+      recRef.current?.stop();
+      wavRef.current?.stop().then((blob) => blob && refineWithSarvam(blob));
+      wavRef.current = null;
+      stopSpeech();
       setInput('');
+      setInterim('');
       setMsgs((m) => [...m, { role: 'user', content: q }]);
       setBusy(true);
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       try {
         const r = await fetch('/api/assistant', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: q, history: msgs.slice(-6) }),
+          body: JSON.stringify({ message: q }),
+          signal: controller.signal,
         });
         const j = await r.json();
         setMsgs((m) => [...m, { role: 'assistant', content: j.reply }]);
@@ -142,16 +301,19 @@ export function Assistant({
         } else {
           speak(j.reply);
         }
-      } catch {
-        setMsgs((m) => [
-          ...m,
-          { role: 'assistant', content: 'Something went wrong reaching me. Try again?' },
-        ]);
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') {
+          setMsgs((m) => [
+            ...m,
+            { role: 'assistant', content: 'Something went wrong reaching me. Try again?' },
+          ]);
+        }
       } finally {
+        abortRef.current = null;
         setBusy(false);
       }
     },
-    [busy, msgs, speak],
+    [busy, speak, stopSpeech],
   );
 
   // --------------------------------------------------------------------- tour
@@ -159,16 +321,17 @@ export function Assistant({
     if (!tour) return;
     const step = tour[tourAt];
     if (!step) return;
-    const el = document.querySelector(`[data-gate="${step.gateId}"]`);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document
+      .querySelector(`[data-gate="${step.gateId}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     speak(step.say);
   }, [tour, tourAt, speak]);
 
-  const endTour = () => {
+  const endTour = useCallback(() => {
     setTour(null);
     setTourAt(0);
     stopSpeech();
-  };
+  }, [stopSpeech]);
 
   return (
     <>
@@ -178,48 +341,83 @@ export function Assistant({
           index={tourAt}
           total={tour.length}
           gate={gates.find((g) => g.id === tour[tourAt]?.gateId)}
+          speaking={speaking}
+          onHush={stopSpeech}
           onNext={() => (tourAt + 1 < tour.length ? setTourAt(tourAt + 1) : endTour())}
           onPrev={() => setTourAt(Math.max(0, tourAt - 1))}
           onClose={endTour}
         />
       )}
 
-      {/* launcher */}
       {!open && !tour && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-5 right-5 z-40 flex items-center gap-2.5 rounded-full bg-teal-700 py-3 pl-3.5 pr-5 text-white shadow-lg transition hover:bg-teal-600"
         >
           <Orb small />
-          <span className="text-[14.5px] font-semibold">Ask about your case</span>
+          <span className="text-[14.5px] font-semibold">Ask Saathi</span>
         </button>
       )}
 
       {open && (
-        <div className="fixed bottom-0 right-0 z-40 flex h-[min(620px,88vh)] w-full flex-col border-t border-ink-100 bg-white shadow-2xl sm:bottom-5 sm:right-5 sm:w-[400px] sm:rounded-md sm:border">
+        <div className="fixed bottom-0 right-0 z-40 flex h-[min(640px,90vh)] w-full flex-col border-t border-ink-100 bg-white shadow-2xl sm:bottom-5 sm:right-5 sm:w-[410px] sm:rounded-md sm:border">
           <header className="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
-            <div className="flex items-center gap-2.5">
-              <Orb small />
-              <div>
-                <p className="text-[14.5px] font-bold text-ink-900">Your guide</p>
-                <p className="text-[12px] text-ink-500">
-                  Knows {firstName}&rsquo;s case only
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Orb small pulsing={busy || speaking} />
+              <div className="min-w-0">
+                <p className="text-[15px] font-bold text-ink-900">Saathi</p>
+                <p className="truncate text-[12px] text-ink-500">
+                  {busy ? 'thinking…' : speaking ? 'speaking…' : 'here to help with your claim'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
+              {speaking && (
+                <button
+                  onClick={stopSpeech}
+                  className="rounded-sm px-2 py-1 text-[12.5px] font-semibold text-signal hover:bg-signal-soft"
+                >
+                  Stop voice
+                </button>
+              )}
               <button
                 onClick={() => {
                   setMuted(!muted);
                   stopSpeech();
                 }}
-                className="rounded-sm px-2 py-1 text-[12.5px] font-semibold text-ink-500 hover:bg-ink-50"
+                aria-pressed={!muted}
+                title={muted ? 'Voice is off — turn it on' : 'Voice is on — turn it off'}
+                className={`flex min-h-[34px] items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold transition ${
+                  muted
+                    ? 'bg-ink-100 text-ink-700 hover:bg-ink-300/60'
+                    : 'bg-teal-700 text-white hover:bg-teal-600'
+                }`}
               >
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <path
+                    d="M4 7.5h3L11 4v12L7 12.5H4z"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinejoin="round"
+                  />
+                  {muted ? (
+                    <path d="M14 7.5l4 5M18 7.5l-4 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  ) : (
+                    <>
+                      <path d="M13.8 7.2a4 4 0 0 1 0 5.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                      <path d="M16.1 5.2a7 7 0 0 1 0 9.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    </>
+                  )}
+                </svg>
                 {muted ? 'Voice off' : 'Voice on'}
               </button>
               <button
-                onClick={() => setOpen(false)}
-                className="rounded-sm px-2.5 py-1 text-[16px] text-ink-500 hover:bg-ink-50"
+                onClick={() => {
+                  stopEverything();
+                  setOpen(false);
+                }}
+                className="rounded-sm px-2.5 py-1 text-[18px] leading-none text-ink-500 hover:bg-ink-50"
                 aria-label="Close"
               >
                 ×
@@ -232,10 +430,8 @@ export function Assistant({
               <div>
                 <p className="text-[15px] leading-relaxed text-ink-700">
                   Hello {firstName}. Your money is{' '}
-                  <span className="font-semibold text-ink-900">
-                    {member.totalDays} working days
-                  </span>{' '}
-                  away. Ask me anything about what is holding it up — I only know about your case.
+                  <span className="font-semibold text-ink-900">{member.totalDays} working days</span>{' '}
+                  away. Ask me anything about what is holding it up.
                 </p>
                 <div className="mt-4 space-y-2">
                   {SUGGESTIONS.map((s) => (
@@ -254,10 +450,8 @@ export function Assistant({
             {msgs.map((m, i) => (
               <div
                 key={i}
-                className={`max-w-[88%] rounded-md px-3.5 py-2.5 text-[14.5px] leading-relaxed ${
-                  m.role === 'user'
-                    ? 'ml-auto bg-teal-700 text-white'
-                    : 'bg-ink-50 text-ink-800'
+                className={`max-w-[88%] whitespace-pre-wrap rounded-md px-3.5 py-2.5 text-[14.5px] leading-relaxed ${
+                  m.role === 'user' ? 'ml-auto bg-teal-700 text-white' : 'bg-ink-50 text-ink-800'
                 }`}
               >
                 {m.content}
@@ -275,41 +469,85 @@ export function Assistant({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              ask(input);
+              ask(composed);
             }}
-            className="flex items-center gap-2 border-t border-ink-100 px-3 py-3"
+            className="border-t border-ink-100 px-3 py-3"
           >
-            <button
-              type="button"
-              onClick={listen}
-              className={`shrink-0 rounded-full p-2.5 transition ${
-                listening ? 'bg-signal text-white' : 'bg-ink-50 text-ink-700 hover:bg-ink-100'
-              }`}
-              aria-label="Speak your question"
-            >
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-                <rect x="7" y="2" width="6" height="10" rx="3" />
-                <path
-                  d="M4 9a6 6 0 0 0 12 0M10 15v3"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={listening ? 'Listening…' : 'Ask about your case'}
-              className="min-w-0 flex-1 rounded-sm border border-ink-100 px-3 py-2.5 text-[15px] outline-none focus:border-teal-700"
-            />
-            <button
-              disabled={busy || !input.trim()}
-              className="shrink-0 rounded-sm bg-teal-700 px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-40"
-            >
-              Ask
-            </button>
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                onClick={listen}
+                className={`shrink-0 rounded-full p-2.5 transition ${
+                  listening ? 'bg-signal text-white' : 'bg-ink-50 text-ink-700 hover:bg-ink-100'
+                }`}
+                aria-label={listening ? 'Stop listening' : 'Speak your question'}
+              >
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                  <rect x="7" y="2" width="6" height="10" rx="3" />
+                  <path
+                    d="M4 9a6 6 0 0 0 12 0M10 15v3"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+
+              <textarea
+                ref={boxRef}
+                rows={1}
+                value={composed}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    ask(composed);
+                  }
+                }}
+                placeholder={listening ? 'Listening — start speaking' : 'Ask about your claim'}
+                className={`min-w-0 flex-1 resize-none rounded-sm border px-3 py-2.5 text-[15px] leading-snug outline-none focus:border-teal-700 ${
+                  listening ? 'border-signal bg-signal-soft' : 'border-ink-100'
+                }`}
+              />
+
+              {busy ? (
+                <button
+                  type="button"
+                  onClick={stopEverything}
+                  className="shrink-0 rounded-sm bg-ink-800 p-2.5 text-white transition hover:bg-ink-900"
+                  aria-label="Stop generating"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+                    <rect x="3" y="3" width="10" height="10" rx="1.5" fill="currentColor" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  disabled={!composed}
+                  className="shrink-0 rounded-sm bg-teal-700 px-4 py-2.5 text-[14px] font-bold text-white transition hover:bg-teal-600 disabled:opacity-40"
+                >
+                  Ask
+                </button>
+              )}
+            </div>
+
+            {refining && !listening && (
+              <p className="mt-1.5 pl-12 text-[11.5px] font-semibold text-teal-700">
+                checking what you said with Sarvam…
+              </p>
+            )}
+
+            {listening && (
+              <p className="mt-1.5 flex items-center gap-1.5 pl-12 text-[11.5px] font-semibold text-signal">
+                <span className="flex gap-0.5" aria-hidden>
+                  <Bar d={0} />
+                  <Bar d={120} />
+                  <Bar d={240} />
+                </span>
+                {interim ? 'hearing you…' : 'listening'} · tap the mic to stop
+              </p>
+            )}
           </form>
         </div>
       )}
@@ -317,12 +555,13 @@ export function Assistant({
   );
 }
 
-/** The orb: highlights the gate being talked about and carries the caption. */
 function TourOverlay({
   step,
   index,
   total,
   gate,
+  speaking,
+  onHush,
   onNext,
   onPrev,
   onClose,
@@ -331,6 +570,8 @@ function TourOverlay({
   index: number;
   total: number;
   gate?: GateInfo;
+  speaking: boolean;
+  onHush: () => void;
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
@@ -372,7 +613,7 @@ function TourOverlay({
 
       <div className="fixed inset-x-0 bottom-0 z-50 border-t-4 border-signal bg-white px-5 py-4 shadow-2xl sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[420px] sm:rounded-md sm:border">
         <div className="flex items-start gap-3">
-          <Orb pulsing />
+          <Orb pulsing={speaking} />
           <div className="min-w-0 flex-1">
             <p className="tabular text-[12px] font-bold uppercase tracking-[0.08em] text-signal">
               {index + 1} of {total} · {gate?.title ?? step.gateId}
@@ -382,12 +623,22 @@ function TourOverlay({
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-3">
-          <button
-            onClick={onClose}
-            className="text-[13.5px] font-semibold text-ink-500 hover:underline"
-          >
-            Stop
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="text-[13.5px] font-semibold text-ink-500 hover:underline"
+            >
+              Stop tour
+            </button>
+            {speaking && (
+              <button
+                onClick={onHush}
+                className="text-[13.5px] font-semibold text-signal hover:underline"
+              >
+                Stop voice
+              </button>
+            )}
+          </div>
           <div className="flex gap-2">
             {index > 0 && (
               <button
@@ -407,6 +658,15 @@ function TourOverlay({
         </div>
       </div>
     </>
+  );
+}
+
+function Bar({ d }: { d: number }) {
+  return (
+    <span
+      className="inline-block w-[3px] rounded-full bg-signal"
+      style={{ height: 11, animation: `vu 760ms ${d}ms ease-in-out infinite` }}
+    />
   );
 }
 

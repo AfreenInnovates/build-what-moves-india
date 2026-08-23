@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { loadCase } from '@/lib/case';
-import { currentCaseId, signOut } from '@/app/actions';
+import { currentCaseId } from '@/app/actions';
 import { Mark } from '@/components/GateList';
 import { Assistant } from '@/components/Assistant';
 
@@ -13,25 +13,57 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!c) redirect('/login');
 
   const { resolution: r, member } = c;
+  const applicable = r.gates.filter((g) => g.status !== 'not_applicable').length;
+  const done = r.gates.filter((g) => g.status === 'green').length;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] gap-0 px-0 lg:px-5">
+    <div className="mx-auto flex w-full max-w-[1680px] gap-0 px-0 lg:px-6">
       {/* sidebar */}
-      <aside className="hidden w-[268px] shrink-0 border-r border-ink-100 bg-white lg:block">
+      <aside className="hidden w-[290px] shrink-0 border-r border-ink-100 bg-white lg:block">
         <div className="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto px-4 py-6">
-          <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-teal-600">
-            Signed in as
+          <div className="mb-5 grid grid-cols-2 gap-2">
+            <Link
+              href="/login"
+              className="flex items-center justify-center gap-1.5 rounded-sm border-2 border-ink-100 bg-white px-2 py-2 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
+            >
+              <span aria-hidden>←</span> Other cases
+            </Link>
+            <Link
+              href="/"
+              className="flex items-center justify-center gap-1.5 rounded-sm border-2 border-ink-100 bg-white px-2 py-2 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
+            >
+              <span aria-hidden>⌂</span> Home
+            </Link>
+          </div>
+
+          <p className="text-[16px] font-bold text-ink-900">
+            Hello, {member.display_name.split(' ')[0]}
           </p>
-          <p className="mt-1 text-[16px] font-bold text-ink-900">{member.display_name}</p>
           <p className="tabular text-[12.5px] text-ink-500">UAN {member.uan}</p>
 
           <div className="mt-4 rounded-sm bg-ink-50 px-3 py-3">
             <p className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-ink-500">
-              Time to settlement
+              {done === applicable ? 'Ready to file in' : 'Your money is'}
             </p>
             <p className="tabular mt-0.5 text-[28px] font-bold leading-none text-signal">
               {r.totalDays}
-              <span className="ml-1.5 text-[13px] font-semibold text-ink-500">working days</span>
+              <span className="ml-1.5 text-[13px] font-semibold text-ink-500">working days away</span>
+            </p>
+
+            <div className="mt-3 flex gap-1" aria-hidden>
+              {r.gates
+                .filter((g) => g.status !== 'not_applicable')
+                .map((g) => (
+                  <span
+                    key={g.id}
+                    className={`h-1.5 flex-1 rounded-xs ${
+                      g.status === 'green' ? 'bg-go' : 'bg-ink-100'
+                    }`}
+                  />
+                ))}
+            </div>
+            <p className="mt-1.5 text-[12px] text-ink-500">
+              {done} of {applicable} done
             </p>
           </div>
 
@@ -43,7 +75,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               {r.gates.map((g) => (
                 <li key={g.id}>
                   <Link
-                    href={g.status === 'not_applicable' ? '/dashboard' : `/dashboard/fix/${g.id}`}
+                    href={`/dashboard/fix/${g.id}`}
                     className="flex items-start gap-2.5 rounded-sm px-2 py-2 transition hover:bg-ink-50"
                   >
                     <Mark status={g.status} />
@@ -64,25 +96,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </ul>
           </nav>
 
-          <div className="mt-7 border-t border-ink-100 pt-4">
-            <Link
-              href="/dashboard"
-              className="block rounded-sm px-2 py-1.5 text-[13.5px] text-ink-700 hover:bg-ink-50"
-            >
-              Overview
-            </Link>
-            <Link
-              href="/whats-mocked"
-              className="block rounded-sm px-2 py-1.5 text-[13.5px] text-ink-700 hover:bg-ink-50"
-            >
-              What&rsquo;s mocked
-            </Link>
-            <form action={signOut}>
-              <button className="block w-full rounded-sm px-2 py-1.5 text-left text-[13.5px] text-ink-700 hover:bg-ink-50">
-                Switch case
-              </button>
-            </form>
+          <div className="mt-7 rounded-sm border-l-4 border-teal-700 bg-teal-50 px-3 py-3">
+            <p className="text-[13px] font-bold text-teal-900">Not sure what any of this means?</p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-teal-700">
+              Tap <span className="font-semibold">Ask Saathi</span> at the bottom of the screen. You
+              can type your question or just say it out loud.
+            </p>
           </div>
+
         </div>
       </aside>
 

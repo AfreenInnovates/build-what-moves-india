@@ -72,7 +72,7 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     submit: 'Save',
     afterSubmit: 'The entry moves to a list headed "KYC Pending for Approval".',
     afterWait:
-      'It now sits with your employer, not with EPFO. Typically 7 to 10 days if they act. If the data is already wrong in EPFO\'s database, this route cannot fix it at all — that needs a paper Joint Declaration.',
+      'It now sits with your employer, not with EPFO. Typically 7 to 10 days if they act. If the data is already wrong in EPFO\'s database, this route cannot fix it at all — that needs a Joint Declaration, which an Aadhaar-verified member can now file themselves through DigiLocker without the employer.',
   },
 
   e_nomination: {
@@ -134,7 +134,7 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     screenTitle: 'Claim (Form-31, 19, 10C & 10D)',
     breadcrumb: 'Member portal → Online Services → Claim',
     intro:
-      'Four forms in one dropdown, no guidance on which applies to you, and no validation that your choice matches your circumstances. Picking wrong is the single biggest cause of rejection.',
+      'Four forms in one dropdown, no guidance on which applies to you, and no validation that your choice matches your circumstances. Picking wrong is among the most commonly cited rejection reasons, and it is entirely avoidable.',
     fields: [
       { label: 'Last 4 digits of your bank account', kind: 'text', placeholder: '5678', required: true, note: 'Real: checked against your KYC-linked account before the form will open. Here: nothing is checked.' },
       {

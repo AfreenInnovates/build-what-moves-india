@@ -66,6 +66,22 @@ export type FixKind =
   | 'form_picker'
   | 'upload';
 
+/**
+ * Where a number came from and when it was last checked.
+ *
+ * EPFO policy moves — the auto-settlement limit and the DigiLocker Joint
+ * Declaration route both changed recently — so an unattributed latency is a
+ * liability. Carrying provenance on every figure means the spec can be audited,
+ * and a stale entry is visible rather than silently wrong.
+ */
+export interface Provenance {
+  /** what backs the figure */
+  source: string;
+  /** ISO date this was last verified */
+  sourcedAt: string;
+  confidence: 'published' | 'reported' | 'estimate';
+}
+
 export interface FixRoute {
   kind: FixKind;
   href: string;
@@ -73,6 +89,7 @@ export interface FixRoute {
   /** working days this route costs once started */
   latencyDays: number;
   label: string;
+  provenance: Provenance;
 }
 
 /** First matching route wins; the last entry must have `when: {op:'true'}`. */
@@ -98,6 +115,7 @@ export interface GateSpec {
   version: string;
   /** working days a clean claim takes once every gate is green */
   baselineSettlementDays: number;
+  baselineProvenance: Provenance;
   gates: Gate[];
 }
 
@@ -118,6 +136,7 @@ export interface ResolvedGate {
   route: FixRoute | null;
   actor: Actor | null;
   latencyDays: number;
+  provenance: Provenance | null;
   /** true when this gate sits on the critical path — i.e. fixing it moves the number */
   onCriticalPath: boolean;
 }

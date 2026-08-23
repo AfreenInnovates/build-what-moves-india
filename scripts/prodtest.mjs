@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const B = 'http://localhost:3100';
+const b = await chromium.launch();
+const p = await b.newPage();
+const errs = [];
+p.on('pageerror', e => errs.push(e.message));
+await p.goto(B + '/login', { waitUntil: 'networkidle' });
+await p.getByRole('button', { name: /Ravi/ }).click();
+await p.waitForURL('**/dashboard', { timeout: 20000 }).catch(() => {});
+console.log('after sign-in URL:', p.url().replace(B, ''));
+const n = await p.getByTestId('countdown').innerText().catch(() => 'NONE');
+console.log('countdown:', n);
+console.log('gates rendered:', await p.locator('[data-gate]').count());
+console.log(errs.length ? 'ERRORS: ' + errs.join(' | ') : 'no page errors');
+await b.close();

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { GateId, GateStatus, ResolvedGate } from '@/lib/gates/types';
 import { PROCESSES } from '@/lib/processes';
+import { WhyThisNumber } from './WhyThisNumber';
 
 const ACTOR_LABEL = {
   you: 'you can do this',
@@ -57,9 +58,18 @@ function GateRow({
             )}
           </div>
 
-          {gate.status === 'green' && <p className="mt-0.5 text-[13px] text-go">Cleared</p>}
-          {gate.status === 'not_applicable' && (
-            <p className="mt-0.5 text-[13px] text-ink-300">Does not apply to you</p>
+          {(gate.status === 'green' || gate.status === 'not_applicable') && (
+            <div className="mt-0.5 flex flex-wrap items-center gap-3">
+              <p className={`text-[13px] ${gate.status === 'green' ? 'text-go' : 'text-ink-400'}`}>
+                {gate.status === 'green' ? 'Cleared' : 'Does not apply to you'}
+              </p>
+              <Link
+                href={`/dashboard/fix/${gate.id}`}
+                className="inline-flex min-h-[24px] items-center text-[13px] font-semibold text-teal-700 hover:underline"
+              >
+                See what was checked →
+              </Link>
+            </div>
           )}
 
           {actionable && (
@@ -78,16 +88,31 @@ function GateRow({
                 </p>
               </div>
 
+              {gate.provenance && (
+                <WhyThisNumber days={gate.latencyDays} provenance={gate.provenance} />
+              )}
+
               {gate.status === 'blocked' ? (
-                <p className="mt-2 text-[12.5px] text-wait">
-                  Locked until you clear{' '}
-                  {waitingOn.length === 2 ? `${waitingOn[0]} and ${waitingOn[1]}` : waitingOn.join(', ')}.
-                </p>
+                <>
+                  <p className="mt-2 text-[12.5px] text-wait">
+                    Locked until you clear{' '}
+                    {waitingOn.length === 2
+                      ? `${waitingOn[0]} and ${waitingOn[1]}`
+                      : waitingOn.join(', ')}
+                    .
+                  </p>
+                  <Link
+                    href={`/dashboard/fix/${gate.id}`}
+                    className="mt-2 inline-flex min-h-[24px] items-center text-[13px] font-semibold text-teal-700 hover:underline"
+                  >
+                    See what it will check →
+                  </Link>
+                </>
               ) : (
                 <Link
                   href={`/dashboard/fix/${gate.id}`}
-                  className="mt-2.5 block rounded-sm bg-teal-700 py-2.5 text-center text-[14px]
-                             font-medium text-white transition hover:bg-teal-600"
+                  className="mt-3 inline-block rounded-sm bg-teal-700 px-6 py-2.5 text-center
+                             text-[14px] font-bold text-white transition hover:bg-teal-600"
                 >
                   {proc.explainOnly ? 'Show me how' : 'Fix this'}
                 </Link>

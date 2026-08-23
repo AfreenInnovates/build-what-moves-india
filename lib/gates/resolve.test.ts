@@ -54,8 +54,9 @@ describe('Priya - the good state exists', () => {
     expect(bad.map((g) => g.id)).toEqual([]);
   });
 
-  it('settles at the baseline of 4 working days', () => {
-    expect(r.totalDays).toBe(4);
+  it('settles at the auto-settlement baseline', () => {
+    expect(r.totalDays).toBe(SPEC.baselineSettlementDays);
+    expect(SPEC.baselineSettlementDays).toBe(3);
     expect(r.blockingCount).toBe(0);
     expect(r.startToday).toBeNull();
   });
@@ -65,11 +66,11 @@ describe('Priya - the good state exists', () => {
   });
 });
 
-describe('Ravi - four gates red, 27 days', () => {
+describe('Ravi - four gates red', () => {
   const r = resolve(SPEC, factsFor('ravi', 3));
 
-  it('opens the countdown at 27 days', () => {
-    expect(r.totalDays).toBe(27);
+  it('opens the countdown at 23 days', () => {
+    expect(r.totalDays).toBe(23);
   });
 
   it('separates what you can act on now from what is waiting upstream', () => {
@@ -95,9 +96,10 @@ describe('Ravi - four gates red, 27 days', () => {
     expect(byId(r, 'attachments').status).not.toBe('not_applicable');
   });
 
-  it('tells you to start the employer correction today, not the quick wins', () => {
-    expect(r.startToday).toBe('records_agree');
-    expect(byId(r, 'records_agree').onCriticalPath).toBe(true);
+  it('names the slowest thing he can actually start today', () => {
+    // the merge is longer but blocked; exit is the longest actionable item
+    expect(r.startToday).toBe('exit_marked');
+    expect(byId(r, 'exit_marked').onCriticalPath).toBe(true);
     expect(byId(r, 'e_nomination').onCriticalPath).toBe(false);
   });
 
@@ -118,16 +120,16 @@ describe('the countdown only moves for work that actually matters', () => {
   });
 
   it('clearing the critical-path gate does', () => {
-    const after = resolve(SPEC, { ...base, blockingMismatches: 0 }).totalDays;
+    const after = resolve(SPEC, { ...base, exitMarked: true }).totalDays;
     expect(after).toBeLessThan(start);
   });
 
   it('descends to the baseline as the real blockers clear', () => {
     const seq: number[] = [start];
     let f = { ...base };
-    f = { ...f, blockingMismatches: 0 };
-    seq.push(resolve(SPEC, f).totalDays);
     f = { ...f, exitMarked: true };
+    seq.push(resolve(SPEC, f).totalDays);
+    f = { ...f, blockingMismatches: 0 };
     seq.push(resolve(SPEC, f).totalDays);
     f = { ...f, distinctUanCount: 1 };
     seq.push(resolve(SPEC, f).totalDays);
@@ -139,24 +141,64 @@ describe('the countdown only moves for work that actually matters', () => {
   });
 });
 
-describe('the employer / joint-declaration fork', () => {
-  it('routes to the employer portal when a current employer can raise it', () => {
+describe('the three correction routes, fastest first', () => {
+  it('an Aadhaar-verified member files the Joint Declaration themselves via DigiLocker', () => {
     const g = byId(resolve(SPEC, factsFor('ravi', 3)), 'records_agree');
+    expect(g.route!.kind).toBe('joint_declaration');
+    expect(g.route!.actor).toBe('you');
+    expect(g.route!.latencyDays).toBe(5);
+    expect(g.route!.label).toMatch(/DigiLocker/);
+  });
+
+  it('frees the closed-employer case, which used to be the worst one', () => {
+    // Lakshmi's employer has shut down. Before DigiLocker this was a 21-day
+    // paper Joint Declaration; now it is the same self-service route as anyone else.
+    const g = byId(resolve(SPEC, factsFor('lakshmi', 1)), 'records_agree');
+    expect(g.route!.actor).toBe('you');
+    expect(g.route!.latencyDays).toBe(5);
+  });
+
+  it('falls back to the employer portal when the member is not Aadhaar-verified', () => {
+    const f = { ...factsFor('ravi', 3), aadhaarLinked: false };
+    const g = byId(resolve(SPEC, f), 'records_agree');
     expect(g.route!.kind).toBe('employer_message');
     expect(g.route!.latencyDays).toBe(10);
   });
 
-  it('falls back to a Joint Declaration when the error came from a closed employer', () => {
-    const g = byId(resolve(SPEC, factsFor('ravi', 3, { errorFromClosedEmployer: true })), 'records_agree');
-    expect(g.route!.kind).toBe('joint_declaration');
+  it('falls back to the paper declaration when neither applies', () => {
+    const f = {
+      ...factsFor('ravi', 3),
+      aadhaarLinked: false,
+      employerResponsive: false,
+      errorFromClosedEmployer: true,
+    };
+    const g = byId(resolve(SPEC, f), 'records_agree');
     expect(g.route!.actor).toBe('epfo');
     expect(g.route!.latencyDays).toBe(21);
   });
+});
 
-  it('costs eleven more days, which is the reason to ask the question', () => {
-    const employer = resolve(SPEC, factsFor('ravi', 3)).totalDays;
-    const jd = resolve(SPEC, factsFor('ravi', 3, { errorFromClosedEmployer: true })).totalDays;
-    expect(jd - employer).toBe(11);
+describe('every number can be traced to a source', () => {
+  it('the baseline says where it came from and when it was checked', () => {
+    expect(SPEC.baselineProvenance.source).toMatch(/auto-settlement/i);
+    expect(SPEC.baselineProvenance.sourcedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('no route carries an unattributed latency', () => {
+    for (const g of SPEC.gates) {
+      for (const r of g.routes) {
+        expect(r.route.provenance.source.length, `${g.id} / ${r.route.kind}`).toBeGreaterThan(20);
+        expect(r.route.provenance.sourcedAt, g.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(['published', 'reported', 'estimate']).toContain(r.route.provenance.confidence);
+      }
+    }
+  });
+
+  it('surfaces provenance on every resolved gate that has a route', () => {
+    const r = resolve(SPEC, factsFor('ravi', 3));
+    for (const g of r.gates.filter((x) => x.route)) {
+      expect(g.provenance, g.id).not.toBeNull();
+    }
   });
 });
 

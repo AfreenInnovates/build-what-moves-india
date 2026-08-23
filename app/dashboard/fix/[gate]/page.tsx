@@ -4,7 +4,10 @@ import { loadCase } from '@/lib/case';
 import { PROCESSES } from '@/lib/processes';
 import { fixGate, currentCaseId } from '@/app/actions';
 import { Alert, ProcessList, StepIndicator, Button, ButtonLink, Tag } from '@/components/ui';
+import { WhyThisNumber } from '@/components/WhyThisNumber';
 import { EPFO_SCREENS } from '@/lib/epfo-screens';
+import { SPEC } from '@/lib/gates/spec';
+import { explain } from '@/lib/gates/explain';
 import { EpfoScreenPreview } from '@/components/EpfoScreen';
 import type { GateId } from '@/lib/gates/types';
 
@@ -28,6 +31,9 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
   if (!g) notFound();
 
   const done = g.status === 'green';
+  const spec = SPEC.gates.find((x) => x.id === proc.id)!;
+  const checks = explain(spec.clears, c.facts);
+  const applies = explain(spec.appliesWhen, c.facts);
 
   const steps = c.resolution.gates
     .filter((x) => x.status !== 'not_applicable')
@@ -37,8 +43,8 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
     }));
 
   return (
-    <main className="mx-auto w-full max-w-[860px] px-5 pb-28 pt-7">
-      <Link href="/dashboard" className="text-[14px] font-medium text-teal-700 hover:underline">
+    <main className="w-full max-w-[980px] px-5 pb-28 pt-7 lg:pl-9">
+      <Link href="/dashboard" className="-ml-2 inline-flex min-h-[44px] items-center rounded-sm px-2 text-[14px] font-medium text-teal-700 hover:underline">
         ← Back to your gates
       </Link>
 
@@ -59,6 +65,75 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
           {g.onCriticalPath && <Tag tone="signal">On the critical path</Tag>}
         </div>
       )}
+
+      {!done && g.provenance && (
+        <div className="mt-3 max-w-[60ch]">
+          <WhyThisNumber days={g.latencyDays} provenance={g.provenance} />
+        </div>
+      )}
+
+      <section className="mt-8 overflow-hidden rounded-md border-2 border-ink-100">
+        <div
+          className={`px-5 py-3 ${
+            done ? 'bg-go-soft' : g.status === 'not_applicable' ? 'bg-ink-50' : 'bg-stop-soft'
+          }`}
+        >
+          <p
+            className={`text-[13px] font-bold uppercase tracking-[0.08em] ${
+              done ? 'text-go' : g.status === 'not_applicable' ? 'text-ink-500' : 'text-stop'
+            }`}
+          >
+            {done
+              ? 'Cleared — here is exactly what was checked'
+              : g.status === 'not_applicable'
+                ? 'Does not apply to you — here is why'
+                : 'What this gate checks, and where you stand'}
+          </p>
+        </div>
+
+        <ul className="divide-y divide-ink-100 bg-white">
+          {(g.status === 'not_applicable' ? applies : checks).map((ch) => (
+            <li key={ch.label} className="flex items-start gap-3 px-5 py-3">
+              <span className="mt-0.5 shrink-0" aria-hidden>
+                {ch.ok ? (
+                  <svg width="18" height="18" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="9" fill="var(--color-go)" />
+                    <path
+                      d="M6 10.5l2.6 2.5L14 7.5"
+                      fill="none"
+                      stroke="#fff"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="9" fill="var(--color-stop)" />
+                    <path d="M7 7l6 6M13 7l-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                )}
+              </span>
+              <span className="min-w-0 flex-1 text-[15px] text-ink-800">{ch.label}</span>
+              <span
+                className={`shrink-0 text-[14px] font-semibold ${ch.ok ? 'text-go' : 'text-stop'}`}
+              >
+                {ch.actual}
+              </span>
+            </li>
+          ))}
+          {(g.status === 'not_applicable' ? applies : checks).length === 0 && (
+            <li className="px-5 py-3 text-[14.5px] text-ink-500">
+              This gate has no conditions to check — it always applies.
+            </li>
+          )}
+        </ul>
+
+        <p className="border-t border-ink-100 bg-ink-50 px-5 py-3 text-[12.5px] leading-relaxed text-ink-500">
+          Read straight from the gate spec, evaluated against your record. These are the same
+          conditions the countdown is computed from — nothing separate.
+        </p>
+      </section>
 
       {/* the before / after that is the whole argument */}
       <section className="mt-9 grid gap-px overflow-hidden rounded-md border border-ink-100 bg-ink-100 md:grid-cols-2">

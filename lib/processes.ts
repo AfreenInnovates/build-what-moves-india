@@ -51,7 +51,7 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'Manage → KYC',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'You tick a document type, enter details, and save. The request then sits under "KYC Pending for Approval" and goes to your employer, not to EPFO — 7 to 10 days if they act at all. EPFO treats Aadhaar as the source of truth, so anything that differs from Aadhaar by even one character is a rejection. Worse, you discover mismatches one rejection at a time, each costing 10 to 20 days.',
+      'You tick a document type, enter details, and save. The request then sits under "KYC Pending for Approval" and goes to your employer, not to EPFO — 7 to 10 days if they act at all. EPFO treats Aadhaar as the source of truth, so anything that differs from Aadhaar by even one character is a rejection. Worse, you discover mismatches one rejection at a time, each costing a full processing cycle.',
     fix: 'We compare all four records in one pass, before you file anything. Name, date of birth and parent name are checked across Aadhaar, PAN, bank and EPFO simultaneously, so you see every problem at once instead of serially. The comparison is rule-based, not a language model — a hallucinated match would cost someone their rent.',
     steps: [
       'Upload or photograph all four: Aadhaar, PAN, bank passbook or cheque, and your EPFO profile.',
@@ -61,7 +61,7 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
       'For each blocking difference you get the winning value, which records must change, and who has to change them.',
     ],
     warning:
-      'Which route you take matters enormously. A responsive current employer can raise the correction on the Employer Portal in about 10 working days. If the employer is unreachable, or the error came from a company that no longer exists, it becomes a paper Joint Declaration with Aadhaar, PAN and birth certificate — roughly 21 days. We ask which situation you are in rather than assuming.',
+      'Which route applies to you matters enormously, and it changed recently. If your UAN is Aadhaar-verified you can now file the Joint Declaration yourself through DigiLocker for name and date-of-birth corrections, with no employer approval at all — which is what finally unblocks people whose old company has shut down. If you are not Aadhaar-verified, it falls back to your employer raising it on the Employer Portal, or to the paper declaration. We ask which situation you are in rather than assuming the slowest one.',
   },
 
   e_nomination: {
@@ -122,7 +122,7 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'Online Services → Claim (Form-31, 19, 10C & 10D)',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'Filing the wrong form is the single biggest cause of rejection, and the portal gives you four options with no guidance. Form 31 with an "out of service" reason, or Form 10C when you have crossed ten years of service, are routine failures. You find out 10 to 20 days later.',
+      'Filing the wrong form is among the most commonly cited rejection reasons, and the portal gives you four options with no guidance. Form 31 with an "out of service" reason, or Form 10C when you have crossed ten years of service, are routine failures. You find out 10 to 20 days later.',
     fix: 'Three plain questions — are you still working there, how long were you there, and what is the money for — and we name the form. We also show the forms we ruled out and why, so it reads as advice rather than a quiz.',
     steps: [
       'Are you still employed at that company?',

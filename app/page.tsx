@@ -69,10 +69,21 @@ export default function Home() {
               <span className="text-teal-700">before you file</span>, not after you are rejected.
             </h1>
             <p className="mt-5 max-w-[54ch] text-[17px] leading-relaxed text-ink-700">
-              EPFO settled over five crore claims last year and rejected roughly{' '}
-              <Hl tone="stop">one in five</Hl>. The dominant cause is not fraud or ineligibility. It
-              is that your name is spelled differently in{' '}
-              <Hl>two databases that were never built to match</Hl>.
+              Analysis of EPFO data puts claim rejections at{' '}
+              <Hl tone="stop">about one in four</Hl> — roughly 26% in FY 2023-24, against a
+              five-year average near 27%. The largest identifiable cluster of reasons is not fraud
+              or ineligibility. It is{' '}
+              <Hl>data that disagrees across records never built to match</Hl>.
+            </p>
+            <p className="mt-3 max-w-[54ch] text-[14px] leading-relaxed text-ink-500">
+              Sources: Factly / Dataful analysis of EPFO claim data (FY 2023-24); separate reporting
+              on final-settlement rejections rising from about 13% in FY 2017-18 to about 34% in
+              FY 2022-23. EPFO disputes the framing, pointing to 5.08 crore claims settled in
+              FY 2024-25 and falling return rates. Both are on{' '}
+              <Link href="/whats-mocked" className="inline-flex min-h-[24px] items-center underline hover:text-teal-600">
+                the sources page
+              </Link>
+              .
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -122,8 +133,8 @@ export default function Home() {
       <section className="border-b border-ink-100 bg-teal-700">
         <div className="mx-auto grid w-full max-w-[1120px] grid-cols-2 gap-6 px-5 py-8 lg:grid-cols-4">
           {[
-            ['5 crore+', 'claims settled in FY 2024-25'],
-            ['~1 in 5', 'rejected, most on a data mismatch'],
+            ['5.08 crore', 'claims settled in FY 2024-25, per EPFO'],
+            ['~26%', 'rejected in FY 2023-24, per Factly / Dataful'],
             ['6 hosts', 'plus an app and a portal you cannot see'],
             ['7 gates', 'none of which are shown together'],
           ].map(([n, label]) => (
@@ -226,8 +237,8 @@ export default function Home() {
 
       {/* --------------------------------------------------------------- hdiv */}
       <section className="mx-auto w-full max-w-[1120px] px-5 py-16">
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-          <div>
+        <div className="grid min-w-0 gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+          <div className="min-w-0">
             <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-teal-600">
               The structural problem
             </p>
@@ -249,17 +260,34 @@ export default function Home() {
               one thing the incumbent structurally cannot do.
             </p>
           </div>
-          <pre className="overflow-x-auto rounded-md bg-ink-900 px-5 py-5 font-mono text-[11.5px] leading-relaxed text-ink-100">
-{`$ curl -sI "…/uanservice/v2/home?_HDIV_STATE_=17-8-8F4BCB3F…"
-302  ->  error.jsp          # token from another session
-
-$ curl -sI "…/uanservice/v2/home"
-302  ->  error.jsp          # no token at all
-
-$ curl -s "…/memberinterface/" | grep -o '_HDIV_STATE_=[^"]*'
-_HDIV_STATE_=3-0-ACF581AB   # first load
-_HDIV_STATE_=4-0-5F2395D8   # second load, seconds later`}
-          </pre>
+          <div className="min-w-0 rounded-md border-2 border-ink-100 bg-white p-5">
+            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-ink-500">
+              What you see in a normal browser session
+            </p>
+            <ul className="mt-3 space-y-2.5 text-[14.5px] leading-relaxed text-ink-700">
+              <li className="flex gap-2.5">
+                <span className="text-teal-700">1.</span>
+                Every link on the member portal ends in a long{' '}
+                <code className="break-all rounded-xs bg-ink-50 px-1 font-mono text-[13px]">
+                  _HDIV_STATE_
+                </code>{' '}
+                parameter — a session token generated per page load.
+              </li>
+              <li className="flex gap-2.5">
+                <span className="text-teal-700">2.</span>
+                Load the same page twice and the token differs.
+              </li>
+              <li className="flex gap-2.5">
+                <span className="text-teal-700">3.</span>
+                Copy any such link, open it later or in another window, and you land on an error
+                page rather than the page you copied.
+              </li>
+            </ul>
+            <p className="mt-4 border-t border-ink-100 pt-3 text-[12.5px] leading-relaxed text-ink-500">
+              Observed while browsing the public portal by hand, in an ordinary browser session. No
+              automated access, no load, and nothing beyond pages any member sees on sign-in.
+            </p>
+          </div>
         </div>
       </section>
 

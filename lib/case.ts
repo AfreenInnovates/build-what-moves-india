@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import fs from 'node:fs';
 import path from 'node:path';
 import { query, one } from './db';
@@ -150,7 +151,12 @@ export async function startCase(slug: string): Promise<string | null> {
   return caseId;
 }
 
-export async function loadCase(caseId: string): Promise<CaseView | null> {
+/**
+ * Deduped for the render pass. The dashboard layout and the page inside it both
+ * need the case; without this they each issue the same query, doubling the cost
+ * of every screen.
+ */
+export const loadCase = cache(async (caseId: string): Promise<CaseView | null> => {
   // case, member and event history in a single round trip. Three separate
   // queries cost ~700ms from here; this costs ~230ms.
   const row = await one<{
@@ -191,7 +197,7 @@ export async function loadCase(caseId: string): Promise<CaseView | null> {
     documents: documentsFor(row.member.slug),
     history,
   };
-}
+});
 
 /** What clearing each gate does to the facts. Replaced by real flows per gate. */
 const CLEARS: Record<GateId, Partial<CaseFacts>> = {

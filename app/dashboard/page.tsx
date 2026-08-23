@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   const cleared = c.history.filter((e) => e.type === 'gate_cleared');
 
   return (
-    <main className="px-5 pb-28 pt-7 lg:pl-8">
+    <main className="px-5 pb-28 pt-7 lg:pl-9 lg:pr-2">
       <div className="border-b border-ink-100 pb-5">
         <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-teal-600">
           Your claim
@@ -30,8 +30,8 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-7 grid gap-7 xl:grid-cols-[360px_1fr] xl:items-start">
-        <div className="space-y-4 xl:sticky xl:top-20">
+      <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(320px,400px)_1fr] lg:items-start">
+        <div className="space-y-4 lg:sticky lg:top-20">
           <section className="rounded-md border border-ink-100 bg-white shadow-[0_1px_2px_rgba(16,20,24,0.04)]">
             <Countdown
               days={r.totalDays}
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
 
           <p className="pt-6 text-[13px] leading-relaxed text-ink-500">
             Computed by the gate resolver from spec {r.specVersion}, and stored in Postgres.{' '}
-            <Link href="/whats-mocked" className="underline hover:text-teal-600">
+            <Link href="/whats-mocked" className="inline-flex min-h-[24px] items-center underline hover:text-teal-600">
               What is mocked
             </Link>
           </p>

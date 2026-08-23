@@ -19,7 +19,15 @@ export const pool =
   new pg.Pool({
     connectionString: process.env.DATABASE_URL,
     max: 5,
-    idleTimeoutMillis: 30_000,
+    // Opening a connection costs ~1.9s from India: TCP, then a TLS handshake,
+    // then SCRAM auth, each a ~235ms round trip to us-east-2. A query on an
+    // already-open connection costs one round trip. So the single most valuable
+    // thing this pool does is not close connections — a 30s idle timeout meant
+    // any pause longer than half a minute made the next page load pay the full
+    // handshake again.
+    idleTimeoutMillis: 10 * 60_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
   });
 
 if (process.env.NODE_ENV !== 'production') globalThis.__pgPool = pool;
