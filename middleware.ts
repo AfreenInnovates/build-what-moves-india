@@ -17,6 +17,7 @@ export function middleware(req: NextRequest) {
   res.cookies.set('case_id', match[1], {
     httpOnly: true,
     sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   });

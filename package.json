@@ -18,7 +18,9 @@
     "spec:publish": "tsx scripts/publish-spec.mts",
     "db:dump": "node scripts/db-dump.mjs",
     "db:clear": "node scripts/db-clear-cases.mjs",
-    "fixtures:make": "node scripts/make-fixtures.mjs"
+    "fixtures:make": "node scripts/make-fixtures.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "check:responsive": "node scripts/responsive.mjs"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

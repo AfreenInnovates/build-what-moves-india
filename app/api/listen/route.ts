@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { caseIdFromCookie, withinLimit } from '@/lib/guard';
 
 export const runtime = 'nodejs';
 
@@ -17,16 +18,27 @@ export const runtime = 'nodejs';
  * the text that is actually sent.
  */
 export async function POST(req: Request) {
+  const caseId = await caseIdFromCookie();
+  if (!caseId) return NextResponse.json({ error: 'not signed in' }, { status: 401 });
+  if (!withinLimit(`listen:${caseId}`, 30, 60_000)) {
+    return NextResponse.json({ error: 'too many requests' }, { status: 429 });
+  }
+
   const form = await req.formData();
   const file = form.get('audio');
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: 'no audio' }, { status: 400 });
   }
+  // 16kHz mono WAV: a minute of speech is about 2MB
+  if (file.size > 8 * 1024 * 1024) {
+    return NextResponse.json({ error: 'audio too large' }, { status: 413 });
+  }
 
   const out = new FormData();
   out.append('file', file, 'speech.wav');
   out.append('model', process.env.SARVAM_ASR_MODEL ?? 'saarika:v2.5');
-  out.append('language_code', String(form.get('language') ?? 'unknown'));
+  const requested = String(form.get('language') ?? 'unknown');
+  out.append('language_code', /^([a-z]{2}-[A-Z]{2}|unknown)$/.test(requested) ? requested : 'unknown');
 
   const res = await fetch(`${process.env.SARVAM_BASE_URL}/speech-to-text`, {
     method: 'POST',
@@ -38,7 +50,7 @@ export async function POST(req: Request) {
     const detail = await res.text().catch(() => '');
     console.error('[listen] sarvam', res.status, detail.slice(0, 200));
     // the caller keeps whatever the browser heard
-    return NextResponse.json({ transcript: null, error: res.status }, { status: 200 });
+    return NextResponse.json({ transcript: null }, { status: 200 });
   }
 
   const j = (await res.json()) as { transcript?: string; language_code?: string };

@@ -44,3 +44,6 @@ next-env.d.ts
 
 # generated fixture images are reproducible via pnpm fixtures:build
 # (kept in repo so the demo works without a render step — remove this comment if you'd rather ignore them)
+
+# the template belongs in the repo; the filled-in files never do
+!.env.example

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { loadCase } from '@/lib/case';
 import { query } from '@/lib/db';
+import { withinLimit, tooLarge } from '@/lib/guard';
 import { PROCESSES } from '@/lib/processes';
 import { EPFO_SCREENS } from '@/lib/epfo-screens';
 
@@ -18,6 +19,13 @@ export async function POST(req: Request) {
 
   const { message } = (await req.json()) as { message: string };
   if (!message?.trim()) return NextResponse.json({ error: 'empty' }, { status: 400 });
+  if (tooLarge(message, 2000)) return NextResponse.json({ error: 'too long' }, { status: 413 });
+  if (!withinLimit(`ask:${caseId}`, 20, 60_000)) {
+    return NextResponse.json(
+      { reply: 'You are asking faster than I can answer. Give me a moment and try again.' },
+      { status: 200 },
+    );
+  }
 
   const [c, past] = await Promise.all([
     loadCase(caseId).catch(() => null),
@@ -134,7 +142,6 @@ Only include gates that are relevant to what they asked. Keep each "say" under 4
         reply: rateLimited
           ? 'I am being asked a lot of questions at once and have hit my rate limit. Give me about a minute and ask again.'
           : 'I could not reach my language service just then. Please try again in a moment.',
-        error: res.status,
       },
       { status: 200 },
     );
