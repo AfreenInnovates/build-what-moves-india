@@ -1,0 +1,75 @@
+{
+  "member": {
+    "uan": "100200300405",
+    "demo_password": "demo1234",
+    "display_name": "Sunita Devi",
+    "scenario": "rejected",
+    "headline": "Records are clean, but nobody marked the exit and there is a real gap",
+    "epfo_name": "SUNITA DEVI",
+    "epfo_dob": "1994-12-05",
+    "epfo_father_name": "RAM PRASAD",
+    "date_of_joining": "2022-04-04",
+    "date_of_exit": null,
+    "employer_name": "Ganga Foods Pvt Ltd",
+    "employer_responsive": true,
+    "eps_service_months": 52,
+    "balance_paise": 7800000,
+    "uan_active": true,
+    "e_nomination_filed": true,
+    "aadhaar_linked": true
+  },
+  "intake": {
+    "formSelected": false
+  },
+  "documents": {
+    "aadhaar": {
+      "script": "latin",
+      "name": "SUNITA DEVI",
+      "dob": "1994-12-05",
+      "father_name": "RAM PRASAD",
+      "id_number": "0668 1123 7745",
+      "gender": "FEMALE",
+      "address": "9 Nehru Nagar, Patna 800013"
+    },
+    "pan": {
+      "script": "latin",
+      "name": "SUNITA DEVI",
+      "dob": "1994-12-05",
+      "father_name": "RAM PRASAD",
+      "id_number": "ZZZZZ5555Z"
+    },
+    "bank": {
+      "script": "devanagari",
+      "name": "SUNITA DEVI",
+      "name_native": "सुनीता देवी",
+      "bank_name": "Demo Bank of India",
+      "bank_name_native": "डेमो बैंक ऑफ इंडिया",
+      "branch_native": "पटना शाखा",
+      "account_number": "0000 3355 7799",
+      "ifsc": "DEMO0000006"
+    },
+    "epfo": {
+      "script": "latin",
+      "name": "SUNITA DEVI",
+      "dob": "1994-12-05",
+      "father_name": "RAM PRASAD",
+      "id_number": "100200300405"
+    }
+  },
+  "service_history": [
+    {
+      "uan": "100200300405",
+      "employer_name": "Ganga Foods Pvt Ltd",
+      "from_date": "2022-04-04",
+      "to_date": null,
+      "eps_months": 28
+    },
+    {
+      "uan": "100200300405",
+      "employer_name": "Bihar Grain Traders",
+      "from_date": "2019-05-02",
+      "to_date": "2021-08-14",
+      "eps_months": 24
+    }
+  ]
+}

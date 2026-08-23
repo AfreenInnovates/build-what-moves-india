@@ -1,0 +1,68 @@
+{
+  "member": {
+    "uan": "100200300404",
+    "demo_password": "demo1234",
+    "display_name": "Farhan Qureshi",
+    "scenario": "rejected",
+    "headline": "UAN never activated, and a date of birth that is one month out",
+    "epfo_name": "FARHAN QURESHI",
+    "epfo_dob": "1979-02-22",
+    "epfo_father_name": "IQBAL QURESHI",
+    "date_of_joining": "2013-06-01",
+    "date_of_exit": "2026-01-31",
+    "employer_name": "Deccan Engineering Works",
+    "employer_responsive": true,
+    "eps_service_months": 152,
+    "balance_paise": 124000000,
+    "uan_active": false,
+    "e_nomination_filed": false,
+    "aadhaar_linked": false
+  },
+  "intake": {
+    "formSelected": false
+  },
+  "documents": {
+    "aadhaar": {
+      "script": "latin",
+      "name": "FARHAN QURESHI",
+      "dob": "1979-03-22",
+      "father_name": "IQBAL QURESHI",
+      "id_number": "0334 7761 9082",
+      "gender": "MALE",
+      "address": "17 Nizam Colony, Hyderabad 500028"
+    },
+    "pan": {
+      "script": "latin",
+      "name": "FARHAN QURESHI",
+      "dob": "1979-03-22",
+      "father_name": "IQBAL QURESHI",
+      "id_number": "ZZZZZ4444Z"
+    },
+    "bank": {
+      "script": "latin",
+      "name": "FARHAN QURESHI",
+      "name_native": "FARHAN QURESHI",
+      "bank_name": "Demo Bank of India",
+      "bank_name_native": "Demo Bank of India",
+      "branch_native": "Hyderabad Branch",
+      "account_number": "0000 2244 6688",
+      "ifsc": "DEMO0000005"
+    },
+    "epfo": {
+      "script": "latin",
+      "name": "FARHAN QURESHI",
+      "dob": "1979-02-22",
+      "father_name": "IQBAL QURESHI",
+      "id_number": "100200300404"
+    }
+  },
+  "service_history": [
+    {
+      "uan": "100200300404",
+      "employer_name": "Deccan Engineering Works",
+      "from_date": "2013-06-01",
+      "to_date": "2026-01-31",
+      "eps_months": 152
+    }
+  ]
+}

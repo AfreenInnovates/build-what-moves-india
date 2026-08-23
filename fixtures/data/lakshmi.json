@@ -1,0 +1,69 @@
+{
+  "member": {
+    "uan": "100200300402",
+    "demo_password": "demo1234",
+    "display_name": "Lakshmi Narayanan",
+    "scenario": "rejected",
+    "headline": "Married name never updated, and the employer has shut down",
+    "epfo_name": "LAKSHMI SUBRAMANIAN",
+    "epfo_dob": "1992-02-19",
+    "epfo_father_name": "R SUBRAMANIAN",
+    "date_of_joining": "2019-01-07",
+    "date_of_exit": "2025-11-28",
+    "employer_name": "Coastal Apparels Pvt Ltd (closed)",
+    "employer_responsive": false,
+    "eps_service_months": 82,
+    "balance_paise": 64520000,
+    "uan_active": true,
+    "e_nomination_filed": true,
+    "aadhaar_linked": true
+  },
+  "intake": {
+    "errorFromClosedEmployer": true,
+    "formSelected": false
+  },
+  "documents": {
+    "aadhaar": {
+      "script": "latin",
+      "name": "LAKSHMI NARAYANAN",
+      "dob": "1992-02-19",
+      "father_name": "R SUBRAMANIAN",
+      "id_number": "0771 3390 5528",
+      "gender": "FEMALE",
+      "address": "22/4 Beach Road, Mangaluru 575001"
+    },
+    "pan": {
+      "script": "latin",
+      "name": "LAKSHMI SUBRAMANIAN",
+      "dob": "1992-02-19",
+      "father_name": "R SUBRAMANIAN",
+      "id_number": "ZZZZZ2222Z"
+    },
+    "bank": {
+      "script": "kannada",
+      "name": "L NARAYANAN",
+      "name_native": "ಎಲ್ ನಾರಾಯಣನ್",
+      "bank_name": "Demo Bank of India",
+      "bank_name_native": "ಡೆಮೊ ಬ್ಯಾಂಕ್ ಆಫ್ ಇಂಡಿಯಾ",
+      "branch_native": "ಮಂಗಳೂರು ಶಾಖೆ",
+      "account_number": "0000 4455 6677",
+      "ifsc": "DEMO0000003"
+    },
+    "epfo": {
+      "script": "latin",
+      "name": "LAKSHMI SUBRAMANIAN",
+      "dob": "1992-02-19",
+      "father_name": "R SUBRAMANIAN",
+      "id_number": "100200300402"
+    }
+  },
+  "service_history": [
+    {
+      "uan": "100200300402",
+      "employer_name": "Coastal Apparels Pvt Ltd",
+      "from_date": "2019-01-07",
+      "to_date": "2025-11-28",
+      "eps_months": 82
+    }
+  ]
+}

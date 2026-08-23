@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Colour is anchored on the EPFO member portal's own teal (#055160), so the page
+ * feels like the right place — built out into a real scale, because the portal
+ * uses teal almost entirely as text colour, which is why it reads flat.
+ *
+ * Structure borrows from the US Web Design System: small radii, an 8px spacing
+ * rhythm, heavy type, high-contrast focus, and a left accent bar to carry status.
+ * We take the craft, not the identity — no federal banner, seal or flag, because
+ * this is not a government service and must never look like one.
+ *
+ * Signal orange appears in two places only: the countdown, and the critical path.
+ */
+@theme {
+  --color-ink-900: #10161c;
+  --color-ink-800: #232f3a;
+  --color-ink-700: #3d4a56;
+  --color-ink-500: #5c6b78;
+  --color-ink-400: #8494a0;
+  --color-ink-300: #adb9c3;
+  --color-ink-100: #dfe5ea;
+  --color-ink-50: #f0f3f6;
+
+  --color-teal-900: #032b33;
+  --color-teal-800: #04404c;
+  --color-teal-700: #055160;
+  --color-teal-600: #076879;
+  --color-teal-500: #098585;
+  --color-teal-200: #a8d8dc;
+  --color-teal-100: #d7eef0;
+  --color-teal-50: #eff8f9;
+
+  --color-signal: #a83f00;
+  --color-signal-soft: #fdf0e6;
+
+  --color-stop: #a4131b;
+  --color-stop-soft: #fdf1f1;
+  --color-wait: #9a5400;
+  --color-wait-soft: #fdf5e6;
+  --color-go: #0a6b46;
+  --color-go-soft: #e9f8f0;
+
+  /* USWDS keeps radii small and deliberate; pills are reserved for tags */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-ink-50);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-ink-900);
+  -webkit-font-smoothing: antialiased;
+  font-synthesis-weight: none;
+}
+
+/*
+ * A visible, high-contrast focus ring on everything interactive. USWDS treats
+ * this as non-negotiable, and for an audience filling in government forms on
+ * cheap Android hardware it matters more than it does on a marketing site.
+ */
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* USWDS process list: numbered steps joined by a vertical rule */
+.process-list > li {
+  position: relative;
+  padding-left: 2.75rem;
+  padding-bottom: 1.5rem;
+}
+.process-list > li::before {
+  content: "";
+  position: absolute;
+  left: 0.875rem;
+  top: 1.75rem;
+  bottom: -0.25rem;
+  width: 2px;
+  background: var(--color-ink-100);
+}
+.process-list > li:last-child {
+  padding-bottom: 0;
+}
+.process-list > li:last-child::before {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes settle {
+    0% { transform: translateY(-0.1em); opacity: 0.4; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .settle { animation: settle 360ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 }

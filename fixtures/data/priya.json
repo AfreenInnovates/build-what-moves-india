@@ -1,0 +1,68 @@
+{
+  "member": {
+    "uan": "100200300401",
+    "demo_password": "demo1234",
+    "display_name": "Priya Venkatesh",
+    "scenario": "ready",
+    "epfo_name": "PRIYA VENKATESH",
+    "epfo_dob": "1988-11-02",
+    "epfo_father_name": "S VENKATESH",
+    "date_of_joining": "2015-04-01",
+    "date_of_exit": "2026-05-31",
+    "employer_name": "Nandi Textiles Ltd",
+    "employer_responsive": true,
+    "eps_service_months": 132,
+    "balance_paise": 81234000,
+    "uan_active": true,
+    "e_nomination_filed": true,
+    "aadhaar_linked": true,
+    "headline": "Everything in order. This is what a clean claim looks like"
+  },
+  "documents": {
+    "aadhaar": {
+      "script": "latin",
+      "name": "PRIYA VENKATESH",
+      "dob": "1988-11-02",
+      "father_name": "S VENKATESH",
+      "id_number": "0923 5580 1147",
+      "gender": "FEMALE",
+      "address": "Flat 302, Shanti Residency, Hubballi 580029"
+    },
+    "pan": {
+      "script": "latin",
+      "name": "PRIYA VENKATESH",
+      "dob": "1988-11-02",
+      "father_name": "S VENKATESH",
+      "id_number": "ZZZZZ1111Z"
+    },
+    "bank": {
+      "script": "devanagari",
+      "name": "PRIYA VENKATESH",
+      "name_native": "प्रिया वेंकटेश",
+      "bank_name": "Demo Bank of India",
+      "bank_name_native": "डेमो बैंक ऑफ इंडिया",
+      "branch_native": "हुबली शाखा",
+      "account_number": "0000 8765 4321",
+      "ifsc": "DEMO0000002"
+    },
+    "epfo": {
+      "script": "latin",
+      "name": "PRIYA VENKATESH",
+      "dob": "1988-11-02",
+      "father_name": "S VENKATESH",
+      "id_number": "100200300401"
+    }
+  },
+  "service_history": [
+    {
+      "uan": "100200300401",
+      "employer_name": "Nandi Textiles Ltd",
+      "from_date": "2015-04-01",
+      "to_date": "2026-05-31",
+      "eps_months": 132
+    }
+  ],
+  "intake": {
+    "formSelected": true
+  }
+}

@@ -13,6 +13,8 @@
 # testing
 /coverage
 
+.env*
+
 # next.js
 /.next/
 /out/
@@ -39,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated fixture images are reproducible via pnpm fixtures:build
+# (kept in repo so the demo works without a render step — remove this comment if you'd rather ignore them)

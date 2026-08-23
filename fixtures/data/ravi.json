@@ -1,0 +1,82 @@
+{
+  "member": {
+    "uan": "100200300400",
+    "demo_password": "demo1234",
+    "display_name": "Ravi Kumar Sharma",
+    "scenario": "rejected",
+    "epfo_name": "RAVI KUMAR SARMA",
+    "epfo_dob": "1990-04-14",
+    "epfo_father_name": "R SHARMA",
+    "date_of_joining": "2021-09-06",
+    "date_of_exit": null,
+    "employer_name": "Sunrise Logistics Pvt Ltd",
+    "employer_responsive": true,
+    "eps_service_months": 46,
+    "balance_paise": 28450000,
+    "uan_active": true,
+    "e_nomination_filed": false,
+    "aadhaar_linked": true,
+    "headline": "Name differs across all four records, no exit date, and a second UAN"
+  },
+  "documents": {
+    "aadhaar": {
+      "script": "latin",
+      "name": "RAVI KUMAR SHARMA",
+      "dob": "1990-07-14",
+      "father_name": "RAMESH SHARMA",
+      "id_number": "0812 4471 9003",
+      "gender": "MALE",
+      "address": "No. 14, 3rd Cross, Vidyaranyapura, Bengaluru 560097"
+    },
+    "pan": {
+      "script": "latin",
+      "name": "R K SHARMA",
+      "dob": "1990-07-14",
+      "father_name": "RAMESH SHARMA",
+      "id_number": "ZZZZZ0000Z"
+    },
+    "bank": {
+      "script": "kannada",
+      "name": "RAVI K SHARMA",
+      "name_native": "ರವಿ ಕೆ ಶರ್ಮಾ",
+      "bank_name": "Demo Bank of India",
+      "bank_name_native": "ಡೆಮೊ ಬ್ಯಾಂಕ್ ಆಫ್ ಇಂಡಿಯಾ",
+      "branch_native": "ವಿದ್ಯಾರಣ್ಯಪುರ ಶಾಖೆ",
+      "account_number": "0000 1234 5678",
+      "ifsc": "DEMO0000001"
+    },
+    "epfo": {
+      "script": "latin",
+      "name": "RAVI KUMAR SARMA",
+      "dob": "1990-04-14",
+      "father_name": "R SHARMA",
+      "id_number": "100200300400"
+    }
+  },
+  "service_history": [
+    {
+      "uan": "100200300400",
+      "employer_name": "Sunrise Logistics Pvt Ltd",
+      "from_date": "2021-09-06",
+      "to_date": null,
+      "eps_months": 46
+    },
+    {
+      "uan": "100200300400",
+      "employer_name": "Metro Freight Services",
+      "from_date": "2019-02-11",
+      "to_date": "2021-08-30",
+      "eps_months": 30
+    },
+    {
+      "uan": "100977600233",
+      "employer_name": "Karnataka Cargo Movers",
+      "from_date": "2016-06-01",
+      "to_date": "2019-01-25",
+      "eps_months": 31
+    }
+  ],
+  "intake": {
+    "formSelected": false
+  }
+}
