@@ -1,0 +1,16 @@
+import { chromium } from 'playwright';
+const B = 'http://localhost:3000';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1440, height: 950 } });
+const errs = [];
+p.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message));
+p.on('console', (m) => m.type() === 'error' && errs.push('CONSOLE: ' + m.text()));
+await p.goto(B + '/login', { waitUntil: 'networkidle' });
+await p.getByRole('button', { name: /Ravi/ }).click();
+await p.waitForURL('**/dashboard');
+await p.waitForTimeout(2500);
+console.log('buttons on page:');
+for (const t of await p.getByRole('button').allInnerTexts()) console.log('  -', JSON.stringify(t.slice(0,60)));
+console.log('has sidebar:', await p.locator('aside').count());
+console.log('errors:', errs.slice(0,6).join(' | ') || 'none');
+await b.close();

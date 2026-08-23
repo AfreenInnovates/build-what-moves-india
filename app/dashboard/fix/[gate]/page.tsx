@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { loadCase } from '@/lib/case';
 import { PROCESSES } from '@/lib/processes';
-import { fixGate } from '@/app/actions';
+import { fixGate, currentCaseId } from '@/app/actions';
 import { Alert, ProcessList, StepIndicator, Button, ButtonLink, Tag } from '@/components/ui';
 import { EPFO_SCREENS } from '@/lib/epfo-screens';
 import { EpfoScreenPreview } from '@/components/EpfoScreen';
@@ -14,17 +14,15 @@ const ACTOR_TEXT = {
   epfo: 'EPFO must act',
 } as const;
 
-export default async function FixPage({
-  params,
-}: {
-  params: Promise<{ caseId: string; gate: string }>;
-}) {
-  const { caseId, gate } = await params;
+export default async function FixPage({ params }: { params: Promise<{ gate: string }> }) {
+  const { gate } = await params;
   const proc = PROCESSES[gate as GateId];
   if (!proc) notFound();
 
+  const caseId = await currentCaseId();
+  if (!caseId) redirect('/login');
   const c = await loadCase(caseId).catch(() => null);
-  if (!c) notFound();
+  if (!c) redirect('/login');
 
   const g = c.resolution.gates.find((x) => x.id === proc.id);
   if (!g) notFound();
@@ -39,8 +37,8 @@ export default async function FixPage({
     }));
 
   return (
-    <main className="mx-auto w-full max-w-[820px] px-5 pb-24 pt-6">
-      <Link href={`/c/${caseId}`} className="text-[14px] font-medium text-teal-700 hover:underline">
+    <main className="mx-auto w-full max-w-[860px] px-5 pb-28 pt-7">
+      <Link href="/dashboard" className="text-[14px] font-medium text-teal-700 hover:underline">
         ← Back to your gates
       </Link>
 
@@ -130,7 +128,7 @@ export default async function FixPage({
         {done ? (
           <Alert tone="success" title="Cleared">
             <p>This gate is done. Nothing here is blocking your claim any more.</p>
-            <ButtonLink href={`/c/${caseId}`} className="mt-4">
+            <ButtonLink href="/dashboard" className="mt-4">
               Back to your gates
             </ButtonLink>
           </Alert>
@@ -141,7 +139,6 @@ export default async function FixPage({
           </Alert>
         ) : (
           <form action={fixGate}>
-            <input type="hidden" name="caseId" value={caseId} />
             <input type="hidden" name="gateId" value={proc.id} />
             <Button className="w-full sm:w-auto">
               {proc.explainOnly ? 'I have done this' : 'Mark this done'}

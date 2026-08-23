@@ -1,6 +1,5 @@
 import 'server-only';
 import fs from 'node:fs';
-import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { query, one } from './db';
 import { SPEC } from './gates/spec';
@@ -85,23 +84,49 @@ export async function listMembers(): Promise<MemberRow[]> {
 }
 
 /**
+ * Members with their service history attached, in a single round trip. The
+ * obvious version issues one query per member; at ~230ms to Neon that turned
+ * the account picker into a two-second wait.
+ */
+export async function listMembersWithService(): Promise<(MemberRow & { service: ServiceRow[] })[]> {
+  return query<MemberRow & { service: ServiceRow[] }>(
+    `select m.*, coalesce(
+       (select json_agg(json_build_object(
+          'uan', s.uan, 'from_date', s.from_date,
+          'to_date', s.to_date, 'eps_months', s.eps_months))
+        from service_history s where s.member_id = m.id), '[]'::json) as service
+     from members m
+     order by m.scenario desc, m.slug`,
+  );
+}
+
+/**
  * One case per member for the demo, so a returning visitor resumes rather than
  * starting over. Real multi-tenant use would key this on a session instead.
  */
 export async function startCase(slug: string): Promise<string | null> {
-  const member = await one<MemberRow>(`select * from members where slug = $1`, [slug]);
-  if (!member) return null;
-
-  const existing = await one<{ id: string }>(
-    `select id from cases where member_id = $1 order by created_at desc limit 1`,
-    [member.id],
+  // member, any existing case, and the service history together
+  const row = await one<{
+    member: MemberRow;
+    existing_case: string | null;
+    service: ServiceRow[];
+  }>(
+    `select to_jsonb(m.*) as member,
+            (select c.id from cases c where c.member_id = m.id
+              order by c.created_at desc limit 1) as existing_case,
+            coalesce((
+              select json_agg(json_build_object(
+                'uan', s.uan, 'from_date', s.from_date,
+                'to_date', s.to_date, 'eps_months', s.eps_months))
+                from service_history s where s.member_id = m.id), '[]'::json) as service
+       from members m where m.slug = $1`,
+    [slug],
   );
-  if (existing) return existing.id;
+  if (!row) return null;
+  if (row.existing_case) return row.existing_case;
 
-  const service = await query<ServiceRow>(
-    `select uan, from_date, to_date, eps_months from service_history where member_id = $1`,
-    [member.id],
-  );
+  const member = row.member;
+  const service = row.service ?? [];
 
   const blockingMismatches = countBlockingMismatches(documentsFor(member.slug));
 
@@ -109,12 +134,12 @@ export async function startCase(slug: string): Promise<string | null> {
   const facts = deriveFacts(member, service, blockingMismatches, intake);
   const r = resolve(SPEC, facts);
 
-  const row = await one<{ id: string }>(
+  const created = await one<{ id: string }>(
     `insert into cases (member_id, intake, facts, spec_version)
      values ($1, $2, $3, $4) returning id`,
     [member.id, intake, facts, SPEC.version],
   );
-  const caseId = row!.id;
+  const caseId = created!.id;
 
   await persistGateStates(caseId, r);
   await query(
@@ -126,22 +151,32 @@ export async function startCase(slug: string): Promise<string | null> {
 }
 
 export async function loadCase(caseId: string): Promise<CaseView | null> {
-  const row = await one<{ facts: CaseFacts; member_id: string }>(
-    `select facts, member_id from cases where id = $1`,
+  // case, member and event history in a single round trip. Three separate
+  // queries cost ~700ms from here; this costs ~230ms.
+  const row = await one<{
+    facts: CaseFacts;
+    member: MemberRow;
+    history: CaseEvent[];
+  }>(
+    `select c.facts,
+            to_jsonb(m.*) as member,
+            coalesce((
+              select json_agg(json_build_object(
+                       'type', e.type, 'payload', e.payload,
+                       'days_remaining', e.days_remaining, 'at', e.at)
+                     order by e.id desc)
+                from (select id, type, payload, days_remaining, at
+                        from events where case_id = c.id
+                       order by id desc limit 12) e
+            ), '[]'::json) as history
+       from cases c join members m on m.id = c.member_id
+      where c.id = $1`,
     [caseId],
   );
   if (!row) return null;
 
-  const member = await one<MemberRow>(`select * from members where id = $1`, [row.member_id]);
-  if (!member) return null;
-
   const resolution = resolve(SPEC, row.facts);
-
-  const history = await query<CaseEvent>(
-    `select type, payload, days_remaining, at from events
-      where case_id = $1 order by id desc limit 12`,
-    [caseId],
-  );
+  const history = row.history ?? [];
 
   // second-most-recent reading, so the countdown animates from where it was
   const priors = history.filter((e) => e.days_remaining !== null);
@@ -149,11 +184,11 @@ export async function loadCase(caseId: string): Promise<CaseView | null> {
 
   return {
     caseId,
-    member,
+    member: row.member,
     facts: row.facts,
     resolution,
     previousDays,
-    documents: documentsFor(member.slug),
+    documents: documentsFor(row.member.slug),
     history,
   };
 }
@@ -208,18 +243,12 @@ export async function resetCase(caseId: string): Promise<void> {
     `select uan, from_date, to_date, eps_months from service_history where member_id = $1`,
     [member.id],
   );
-  // a self-built case has no fixture to fall back on; its answers live on the case
-  const selfAnswers = row.intake?.answers as SelfAnswers | undefined;
-  const docs = documentsFor(member.slug);
-  const blockingMismatches = selfAnswers
-    ? selfAnswers.recordsMatch === 'yes'
-      ? 0
-      : 1
-    : countBlockingMismatches(docs);
-  const intake = selfAnswers
-    ? (row.intake as Partial<Intake>)
-    : intakeFor(member.slug);
-  const facts = deriveFacts(member, service, blockingMismatches, intake);
+  const facts = deriveFacts(
+    member,
+    service,
+    countBlockingMismatches(documentsFor(member.slug)),
+    intakeFor(member.slug),
+  );
 
   await query(`update cases set facts = $1, updated_at = now() where id = $2`, [facts, caseId]);
   await query(`delete from events where case_id = $1`, [caseId]);

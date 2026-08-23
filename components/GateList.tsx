@@ -8,13 +8,13 @@ const ACTOR_LABEL = {
   epfo: 'EPFO must do this',
 } as const;
 
-export function GateList({ gates, caseId }: { gates: ResolvedGate[]; caseId: string }) {
+export function GateList({ gates }: { gates: ResolvedGate[] }) {
   const titleOf = (id: GateId) => gates.find((g) => g.id === id)?.title ?? id;
 
   return (
     <ol className="space-y-2">
       {gates.map((g) => (
-        <GateRow key={g.id} gate={g} caseId={caseId} titleOf={titleOf} />
+        <GateRow key={g.id} gate={g} titleOf={titleOf} />
       ))}
     </ol>
   );
@@ -22,11 +22,9 @@ export function GateList({ gates, caseId }: { gates: ResolvedGate[]; caseId: str
 
 function GateRow({
   gate,
-  caseId,
   titleOf,
 }: {
   gate: ResolvedGate;
-  caseId: string;
   titleOf: (id: GateId) => string;
 }) {
   const actionable = gate.status === 'red' || gate.status === 'blocked';
@@ -35,7 +33,8 @@ function GateRow({
 
   return (
     <li
-      className={`rounded-md border bg-white px-4 py-3.5 ${
+      data-gate={gate.id}
+      className={`scroll-mt-24 rounded-md border bg-white px-4 py-3.5 ${
         gate.onCriticalPath ? 'border-signal/35' : 'border-ink-100'
       }`}
     >
@@ -86,7 +85,7 @@ function GateRow({
                 </p>
               ) : (
                 <Link
-                  href={`/c/${caseId}/fix/${gate.id}`}
+                  href={`/dashboard/fix/${gate.id}`}
                   className="mt-2.5 block rounded-sm bg-teal-700 py-2.5 text-center text-[14px]
                              font-medium text-white transition hover:bg-teal-600"
                 >

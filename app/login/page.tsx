@@ -1,12 +1,10 @@
 import Link from 'next/link';
-import { listMembers } from '@/lib/case';
+import { listMembersWithService } from '@/lib/case';
 import { signIn } from '@/app/actions';
 import { SPEC } from '@/lib/gates/spec';
 import { resolve } from '@/lib/gates/resolve';
 import { deriveFacts } from '@/lib/gates/facts';
 import { documentsFor, intakeFor, countBlockingMismatches } from '@/lib/case';
-import { query } from '@/lib/db';
-import type { ServiceRow } from '@/lib/gates/facts';
 import { Tag } from '@/components/ui';
 
 const SCENARIO: Record<string, { label: string; tone: 'error' | 'success' | 'warning' }> = {
@@ -16,20 +14,12 @@ const SCENARIO: Record<string, { label: string; tone: 'error' | 'success' | 'war
 };
 
 export default async function LoginPage() {
-  const members = await listMembers();
-
-  // preview each member's real day count, so the picker itself shows the range
-  const cards = await Promise.all(
-    members.map(async (m) => {
-      const service = await query<ServiceRow>(
-        `select uan, from_date, to_date, eps_months from service_history where member_id = $1`,
-        [m.id],
-      );
-      const mismatches = countBlockingMismatches(documentsFor(m.slug));
-      const r = resolve(SPEC, deriveFacts(m, service, mismatches, intakeFor(m.slug)));
-      return { m, days: r.totalDays, blocking: r.blockingCount };
-    }),
-  );
+  // one round trip for everything the picker needs
+  const cards = (await listMembersWithService()).map((m) => {
+    const mismatches = countBlockingMismatches(documentsFor(m.slug));
+    const r = resolve(SPEC, deriveFacts(m, m.service, mismatches, intakeFor(m.slug)));
+    return { m, days: r.totalDays, blocking: r.blockingCount };
+  });
 
   return (
     <main className="mx-auto w-full max-w-[1120px] px-5 pb-24 pt-10">
@@ -84,18 +74,7 @@ export default async function LoginPage() {
           );
         })}
 
-        {/* build one from scratch */}
-        <Link
-          href="/start"
-          className="flex h-full flex-col justify-center rounded-md border-2 border-dashed border-teal-200 bg-teal-50 p-5 transition hover:border-teal-700"
-        >
-          <p className="text-[17px] font-bold text-teal-900">Start from scratch</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-teal-700">
-            Answer seven questions the way a new member would and watch the gates assemble around your
-            answers. This is the onboarding, not a demo account.
-          </p>
-          <p className="mt-4 text-[13.5px] font-semibold text-teal-700">Begin →</p>
-        </Link>
+
       </div>
 
       <p className="mt-8 max-w-[76ch] text-[13.5px] leading-relaxed text-ink-500">
