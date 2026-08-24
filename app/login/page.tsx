@@ -1,73 +1,59 @@
 import Link from 'next/link';
 import { listMembersWithService } from '@/lib/case';
-import { signIn } from '@/app/actions';
 import { SPEC } from '@/lib/gates/spec';
 import { resolve } from '@/lib/gates/resolve';
 import { deriveFacts } from '@/lib/gates/facts';
 import { documentsFor, intakeFor, countBlockingMismatches } from '@/lib/case';
-import { CaseCard } from '@/components/CaseCard';
+import { CasePicker, type PickerCard } from '@/components/CasePicker';
+import { NewProfile } from '@/components/NewProfile';
 
-// This page reads members from Postgres. Left static it would be prerendered at
-// build time and freeze whatever the database held then — re-seeding would not
-// show up until the next deploy.
+// This page reads members from Postgres, so it must render per request.
 export const dynamic = 'force-dynamic';
 
-const SCENARIO: Record<string, { label: string; tone: 'error' | 'success' | 'warning' }> = {
+const SCENARIO: Record<string, PickerCard['scenario']> = {
   rejected: { label: 'Claim rejected', tone: 'error' },
   ready: { label: 'Ready to file', tone: 'success' },
   advance: { label: 'Advance, still employed', tone: 'warning' },
 };
 
 export default async function LoginPage() {
-  // one round trip for everything the picker needs
-  const cards = (await listMembersWithService()).map((m) => {
-    const mismatches = countBlockingMismatches(documentsFor(m.slug));
+  const cards: PickerCard[] = (await listMembersWithService()).map((m) => {
+    const mismatches = countBlockingMismatches(documentsFor(m.slug, m.documents));
     const r = resolve(SPEC, deriveFacts(m, m.service, mismatches, intakeFor(m.slug)));
-    return { m, days: r.totalDays, blocking: r.blockingCount };
+    return {
+      id: m.id,
+      slug: m.slug,
+      name: m.display_name,
+      headline: m.headline,
+      uan: m.uan,
+      days: r.totalDays,
+      blocking: r.blockingCount,
+      balance: Math.round(m.balance_paise / 100),
+      scenario: SCENARIO[m.scenario] ?? { label: m.scenario, tone: 'warning' },
+    };
   });
 
   return (
-    <main className="mx-auto w-full max-w-[1120px] px-5 pb-24 pt-10">
-      <Link href="/" className="-ml-2 inline-flex min-h-[44px] items-center rounded-sm px-2 text-[14px] font-medium text-teal-700 hover:underline">
+    <main className="mx-auto w-full max-w-[1120px] px-5 pb-28 pt-12">
+      <Link
+        href="/"
+        className="-ml-2 inline-flex min-h-[44px] items-center rounded-sm px-2 text-[14px] font-semibold text-teal-700 hover:underline"
+      >
         ← Home
       </Link>
 
-      <h1 className="mt-4 text-[34px] leading-[1.12] font-bold tracking-tight text-ink-900">
-        Pick a case to open
+      <h1 className="mt-4 text-[36px] leading-[1.1] font-bold tracking-tight text-ink-900">
+        Whose claim shall we look at?
       </h1>
-      <p className="mt-3 max-w-[64ch] text-[16.5px] leading-relaxed text-ink-700">
-        Six synthetic members, each stuck for a different real reason. No typing, no password screen.
-        Every number below is computed live — none of them is written into this page.
+      <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed text-ink-700">
+        Six people, each stuck for a different real reason. One tap — no password, no typing.
       </p>
 
-      <div className="mt-9 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {cards.map(({ m, days, blocking }) => {
-          const s = SCENARIO[m.scenario] ?? { label: m.scenario, tone: 'warning' as const };
-          return (
-            <form key={m.id} action={signIn} className="contents">
-              <input type="hidden" name="slug" value={m.slug} />
-              <CaseCard
-                name={m.display_name}
-                headline={m.headline}
-                uan={m.uan}
-                password={m.demo_password}
-                days={days}
-                blocking={blocking}
-                scenario={s}
-              />
-            </form>
-          );
-        })}
+      <CasePicker cards={cards} />
 
-
+      <div className="mt-6">
+        <NewProfile />
       </div>
-
-      <p className="mt-8 max-w-[76ch] text-[13.5px] leading-relaxed text-ink-500">
-        Credentials are printed on each card because a login wall between a reviewer and the product
-        helps nobody. None of these accounts contains real Aadhaar, PAN or bank data, and the
-        documents attached to them are watermarked synthetic files with deliberately invalid
-        identifiers.
-      </p>
     </main>
   );
 }

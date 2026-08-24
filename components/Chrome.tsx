@@ -88,10 +88,6 @@ export function SiteFooter() {
           </Link>
           .
         </p>
-        <p className="mt-3 text-[12.5px] text-ink-300">
-          Balance by SMS with no internet at all: give a missed call to 9966044425. EPFO helpline
-          14470, multilingual, 7am to 9pm.
-        </p>
       </div>
     </footer>
   );

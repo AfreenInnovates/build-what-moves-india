@@ -16,7 +16,7 @@
     "uan_active": true,
     "e_nomination_filed": false,
     "aadhaar_linked": true,
-    "headline": "Name differs across all four records, no exit date, and a second UAN"
+    "headline": "Four jobs over 11 years — clean until a second UAN appeared at the third, now stuck withdrawing at the fourth"
   },
   "documents": {
     "aadhaar": {
@@ -62,17 +62,24 @@
       "eps_months": 46
     },
     {
-      "uan": "100200300400",
-      "employer_name": "Metro Freight Services",
-      "from_date": "2019-02-11",
-      "to_date": "2021-08-30",
-      "eps_months": 30
+      "uan": "100977600233",
+      "employer_name": "Deccan Warehousing Co",
+      "from_date": "2019-03-01",
+      "to_date": "2021-08-20",
+      "eps_months": 29
     },
     {
-      "uan": "100977600233",
-      "employer_name": "Karnataka Cargo Movers",
-      "from_date": "2016-06-01",
+      "uan": "100200300400",
+      "employer_name": "Metro Freight Services",
+      "from_date": "2017-02-11",
       "to_date": "2019-01-25",
+      "eps_months": 23
+    },
+    {
+      "uan": "100200300400",
+      "employer_name": "Karnataka Cargo Movers",
+      "from_date": "2014-06-01",
+      "to_date": "2017-01-20",
       "eps_months": 31
     }
   ],

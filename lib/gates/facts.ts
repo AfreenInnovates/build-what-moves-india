@@ -13,6 +13,7 @@ export interface MemberRecord {
 
 export interface ServiceRow {
   uan: string;
+  employer_name?: string;
   from_date: string;
   to_date: string | null;
   eps_months: number;

@@ -4,6 +4,8 @@ const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await c.connect();
 await c.query(`alter table members add column if not exists slug text`);
 await c.query(`alter table members add column if not exists headline text`);
+await c.query(`alter table members add column if not exists documents jsonb`);
+
 await c.query(`update members set slug = lower(split_part(display_name,' ',1)) where slug is null`);
 await c.query(`create unique index if not exists members_slug_idx on members(slug)`);
 // events already exist; make sure the case link is queryable

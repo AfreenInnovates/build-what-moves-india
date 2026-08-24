@@ -19,8 +19,8 @@
   --color-ink-500: #5c6b78;
   --color-ink-400: #8494a0;
   --color-ink-300: #adb9c3;
-  --color-ink-100: #dfe5ea;
-  --color-ink-50: #f0f3f6;
+  --color-ink-100: #e7ecf0;
+  --color-ink-50: #f4f7f7;
 
   --color-teal-900: #032b33;
   --color-teal-800: #04404c;
@@ -30,6 +30,17 @@
   --color-teal-200: #a8d8dc;
   --color-teal-100: #d7eef0;
   --color-teal-50: #eff8f9;
+
+  /* accent family, so cards and chips are not all teal. Tuned for contrast on
+     white, in the spirit of the multi-colour palettes on edmo / persist. */
+  --color-sun: #b8860b;
+  --color-sun-soft: #fdf3d7;
+  --color-coral: #b8452f;
+  --color-coral-soft: #fdeeea;
+  --color-sky: #1b6ea8;
+  --color-sky-soft: #e6f2fb;
+  --color-violet: #6d3f9e;
+  --color-violet-soft: #f2ecfb;
 
   --color-signal: #a83f00;
   --color-signal-soft: #fdf0e6;
@@ -42,23 +53,36 @@
   --color-go-soft: #e9f8f0;
 
   /* USWDS keeps radii small and deliberate; pills are reserved for tags */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-xs: 6px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 40px;
 
-  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-sans: var(--font-sans-var), system-ui, sans-serif;
+  --font-display: var(--font-display-var), var(--font-sans-var), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html {
-  background: var(--color-ink-50);
+  background:
+    radial-gradient(1100px 620px at 108% -8%, rgba(9, 133, 133, 0.10), transparent 58%),
+    radial-gradient(900px 560px at -12% 4%, rgba(168, 63, 0, 0.045), transparent 55%),
+    radial-gradient(1200px 800px at 50% 120%, rgba(5, 81, 96, 0.05), transparent 60%),
+    linear-gradient(180deg, #fbfcfb 0%, #f3f7f7 100%);
+  background-attachment: fixed;
 }
 
 body {
   color: var(--color-ink-900);
   -webkit-font-smoothing: antialiased;
   font-synthesis-weight: none;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 /*
@@ -131,4 +155,71 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .deferred { animation-duration: 1ms; }
+}
+
+/* ---------------------------------------------------------------- motion --
+   Entrance and timeline animation. Everything respects reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .rise { animation: rise 460ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .rise-1 { animation-delay: 60ms; }
+  .rise-2 { animation-delay: 120ms; }
+  .rise-3 { animation-delay: 180ms; }
+  .rise-4 { animation-delay: 240ms; }
+  .rise-5 { animation-delay: 300ms; }
+
+  /* a timeline connector that draws itself downward */
+  @keyframes draw-line { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  .draw-line { transform-origin: top; animation: draw-line 700ms ease-out both; }
+
+  @keyframes pop-dot {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  .pop-dot { animation: pop-dot 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+}
+
+/* soft card lift */
+.card-hover { transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(5, 81, 96, 0.10); }
+
+/* ------------------------------------------------------ alive touches --
+   reactbits-inspired effects, implemented in CSS so they stay within the CSP. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes aurora {
+    0%   { transform: translate(-6%, -4%) rotate(0deg) scale(1.05); }
+    50%  { transform: translate(6%, 4%) rotate(8deg) scale(1.15); }
+    100% { transform: translate(-6%, -4%) rotate(0deg) scale(1.05); }
+  }
+  .aurora {
+    position: absolute;
+    inset: -25%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(closest-side, rgba(9, 133, 133, 0.22), transparent 70%) 20% 30% / 55% 55% no-repeat,
+      radial-gradient(closest-side, rgba(168, 63, 0, 0.14), transparent 70%) 80% 20% / 45% 45% no-repeat,
+      radial-gradient(closest-side, rgba(5, 81, 96, 0.16), transparent 70%) 60% 80% / 50% 50% no-repeat;
+    filter: blur(18px);
+    animation: aurora 16s ease-in-out infinite;
+  }
+
+  /* a slow sheen that sweeps across a button */
+  @keyframes shine {
+    0%   { transform: translateX(-130%) skewX(-18deg); }
+    60%, 100% { transform: translateX(230%) skewX(-18deg); }
+  }
+  .shine { position: relative; overflow: hidden; }
+  .shine::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    animation: shine 4.5s ease-in-out infinite;
+  }
 }

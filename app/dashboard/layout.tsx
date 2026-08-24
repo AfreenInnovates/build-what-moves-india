@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
-import { Mark } from '@/components/GateList';
 import { Assistant } from '@/components/Assistant';
+import { SectionNav } from '@/components/SectionNav';
+import { Icon } from '@/components/Icon';
+import { alerts } from '@/lib/insights';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const caseId = await currentCaseId();
@@ -15,24 +17,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { resolution: r, member } = c;
   const applicable = r.gates.filter((g) => g.status !== 'not_applicable').length;
   const done = r.gates.filter((g) => g.status === 'green').length;
+  const needsAttention = alerts(c).filter((a) => a.severity !== 'good').length;
 
   return (
     <div className="mx-auto flex w-full max-w-[1680px] gap-0 px-0 lg:px-6">
-      {/* sidebar */}
-      <aside className="hidden w-[290px] shrink-0 border-r border-ink-100 bg-white lg:block">
+      <aside className="hidden w-[300px] shrink-0 border-r border-ink-100 bg-white lg:block">
         <div className="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto px-4 py-6">
           <div className="mb-5 grid grid-cols-2 gap-2">
             <Link
               href="/login"
-              className="flex items-center justify-center gap-1.5 rounded-sm border-2 border-ink-100 bg-white px-2 py-2 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
+              className="flex items-center justify-center gap-1.5 rounded-md border-2 border-ink-100 bg-white px-2 py-2.5 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
             >
-              <span aria-hidden>←</span> Other cases
+              <Icon name="back" size={15} aria-hidden /> Cases
             </Link>
             <Link
               href="/"
-              className="flex items-center justify-center gap-1.5 rounded-sm border-2 border-ink-100 bg-white px-2 py-2 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
+              className="flex items-center justify-center gap-1.5 rounded-md border-2 border-ink-100 bg-white px-2 py-2.5 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
             >
-              <span aria-hidden>⌂</span> Home
+              <Icon name="home" size={15} aria-hidden /> Home
             </Link>
           </div>
 
@@ -49,16 +51,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
               {r.totalDays}
               <span className="ml-1.5 text-[13px] font-semibold text-ink-500">working days away</span>
             </p>
-
             <div className="mt-3 flex gap-1" aria-hidden>
               {r.gates
                 .filter((g) => g.status !== 'not_applicable')
                 .map((g) => (
                   <span
                     key={g.id}
-                    className={`h-1.5 flex-1 rounded-xs ${
-                      g.status === 'green' ? 'bg-go' : 'bg-ink-100'
-                    }`}
+                    className={`h-1.5 flex-1 rounded-xs ${g.status === 'green' ? 'bg-go' : 'bg-ink-100'}`}
                   />
                 ))}
             </div>
@@ -67,43 +66,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </p>
           </div>
 
-          <nav className="mt-6">
-            <p className="mb-2 text-[11.5px] font-bold uppercase tracking-[0.08em] text-ink-500">
-              Your gates
+          <div className="mt-6">
+            <p className="mb-2 px-1 text-[11.5px] font-bold uppercase tracking-[0.08em] text-ink-500">
+              Your EPF
             </p>
-            <ul className="space-y-0.5">
-              {r.gates.map((g) => (
-                <li key={g.id}>
-                  <Link
-                    href={`/dashboard/fix/${g.id}`}
-                    className="flex items-start gap-2.5 rounded-sm px-2 py-2 transition hover:bg-ink-50"
-                  >
-                    <Mark status={g.status} />
-                    <span
-                      className={`text-[13.5px] leading-snug ${
-                        g.status === 'not_applicable'
-                          ? 'text-ink-300'
-                          : g.status === 'green'
-                            ? 'text-ink-500'
-                            : 'font-medium text-ink-900'
-                      }`}
-                    >
-                      {g.title}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="mt-7 rounded-sm border-l-4 border-teal-700 bg-teal-50 px-3 py-3">
-            <p className="text-[13px] font-bold text-teal-900">Not sure what any of this means?</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-teal-700">
-              Tap <span className="font-semibold">Ask Saathi</span> at the bottom of the screen. You
-              can type your question or just say it out loud.
-            </p>
+            <SectionNav alertCount={needsAttention} />
           </div>
 
+          <div className="mt-6 rounded-sm border-l-4 border-teal-700 bg-teal-50 px-3 py-3">
+            <p className="flex items-center gap-1.5 text-[13px] font-bold text-teal-900"><Icon name="explain" size={16} aria-hidden /> Explain My EPF</p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-teal-700">
+              Tap <span className="font-semibold">Ask Saathi</span> at the bottom of the screen. Type
+              your question, or just say it out loud.
+            </p>
+          </div>
         </div>
       </aside>
 

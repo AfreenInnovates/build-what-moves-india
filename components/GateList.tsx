@@ -10,12 +10,15 @@ const ACTOR_LABEL = {
 } as const;
 
 export function GateList({ gates }: { gates: ResolvedGate[] }) {
+  const delay = (i: number) => `rise rise-${Math.min(i + 1, 5)}`;
   const titleOf = (id: GateId) => gates.find((g) => g.id === id)?.title ?? id;
 
   return (
     <ol className="space-y-2">
-      {gates.map((g) => (
-        <GateRow key={g.id} gate={g} titleOf={titleOf} />
+      {gates.map((g, i) => (
+        <div key={g.id} className={delay(i)}>
+          <GateRow gate={g} titleOf={titleOf} />
+        </div>
       ))}
     </ol>
   );

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { loadCase } from '@/lib/case';
-import { PROCESSES } from '@/lib/processes';
+import { PROCESSES, POINTS } from '@/lib/processes';
 import { fixGate, currentCaseId } from '@/app/actions';
 import { Alert, ProcessList, StepIndicator, Button, ButtonLink, Tag } from '@/components/ui';
 import { WhyThisNumber } from '@/components/WhyThisNumber';
@@ -31,6 +31,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
   if (!g) notFound();
 
   const done = g.status === 'green';
+  const points = POINTS[proc.id];
   const spec = SPEC.gates.find((x) => x.id === proc.id)!;
   const checks = explain(spec.clears, c.facts);
   const applies = explain(spec.appliesWhen, c.facts);
@@ -145,13 +146,31 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
             {proc.epfoPath}
           </p>
           <p className="mt-1 break-all font-mono text-[11.5px] text-ink-400">{proc.epfoHost}</p>
-          <p className="mt-4 text-[15px] leading-relaxed text-ink-700">{proc.breaks}</p>
+          <ul className="mt-4 space-y-2.5">
+            {points.breaks.map((b) => (
+              <li key={b} className="flex gap-2.5 text-[14.5px] leading-snug text-ink-700">
+                <span className="mt-[3px] shrink-0 text-stop" aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.12"/><path d="M5 8h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
         </div>
         <div className="bg-teal-50 p-5">
           <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-teal-700">
             What we do instead
           </p>
-          <p className="mt-3 text-[15px] leading-relaxed text-teal-900">{proc.fix}</p>
+          <ul className="mt-4 space-y-2.5">
+            {points.fix.map((b) => (
+              <li key={b} className="flex gap-2.5 text-[14.5px] leading-snug text-teal-900">
+                <span className="mt-[3px] shrink-0 text-teal-700" aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -218,9 +237,6 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
             <Button className="w-full sm:w-auto">
               {proc.explainOnly ? 'I have done this' : 'Mark this done'}
             </Button>
-            <p className="mt-3 text-[13.5px] text-ink-500">
-              Saved to your case. Refreshing will not undo it.
-            </p>
           </form>
         )}
       </div>

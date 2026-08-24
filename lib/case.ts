@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { query, one } from './db';
 import { SPEC } from './gates/spec';
@@ -19,6 +20,7 @@ export interface MemberRow extends MemberRecord {
   epfo_name: string | null;
   epfo_dob: string | null;
   epfo_father_name: string | null;
+  documents?: Record<string, DocumentValues> | null;
 }
 
 export interface CaseView {
@@ -29,6 +31,7 @@ export interface CaseView {
   /** the number the countdown should animate FROM, so a refresh does not re-animate */
   previousDays: number | null;
   documents: Record<string, DocumentValues>;
+  service: ServiceRow[];
   history: CaseEvent[];
 }
 
@@ -55,7 +58,10 @@ function fixtureFor(slug: string): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-export function documentsFor(slug: string): Record<string, DocumentValues> {
+export function documentsFor(slug: string, stored?: unknown): Record<string, DocumentValues> {
+  // a DB-created profile carries its own documents; the seeded demos read theirs
+  // from the fixture file. Either way, one source per member.
+  if (stored && typeof stored === 'object') return stored as Record<string, DocumentValues>;
   return (fixtureFor(slug).documents as Record<string, DocumentValues>) ?? {};
 }
 
@@ -129,7 +135,7 @@ export async function startCase(slug: string): Promise<string | null> {
   const member = row.member;
   const service = row.service ?? [];
 
-  const blockingMismatches = countBlockingMismatches(documentsFor(member.slug));
+  const blockingMismatches = countBlockingMismatches(documentsFor(member.slug, member.documents));
 
   const intake = intakeFor(member.slug);
   const facts = deriveFacts(member, service, blockingMismatches, intake);
@@ -156,16 +162,94 @@ export async function startCase(slug: string): Promise<string | null> {
  * need the case; without this they each issue the same query, doubling the cost
  * of every screen.
  */
+
+/**
+ * A blank-slate profile for exploring the product: a name, three employers, and
+ * a couple of realistic, fixable problems. Everything — the member, its
+ * synthesized documents, and the service history — is written to the database,
+ * so the new case behaves exactly like a seeded one and survives a refresh.
+ */
+export interface NewProfileInput {
+  name: string;
+  dob?: string;
+  employer?: string;
+  joined?: string;
+}
+
+export async function createOwnProfile(input: NewProfileInput | string): Promise<string> {
+  const i: NewProfileInput = typeof input === 'string' ? { name: input } : input;
+  const name = (i.name || 'New Member').trim().replace(/\s+/g, ' ').slice(0, 60);
+  const upper = name.toUpperCase();
+  const slug = `you-${randomUUID().slice(0, 6)}`;
+  const uan = `1${Math.floor(1e11 + Math.random() * 8e11)}`.slice(0, 12);
+  const parts = upper.split(' ');
+  const father = `${parts[0] === 'NEW' ? 'RAMESH' : 'RAJESH'} ${parts.at(-1) ?? 'KUMAR'}`;
+
+  // one deliberate mismatch: EPFO holds an initialled version of the name, the
+  // classic cause of rejection. Everything else agrees, so Record Health has
+  // exactly one thing to fix.
+  const epfoName =
+    parts.length > 1 ? `${parts[0]} ${parts.slice(1).map((w) => w[0]).join(' ')}` : upper;
+  const dob = i.dob || '1992-06-18';
+  const documents = {
+    aadhaar: { script: 'latin', name: upper, dob, father_name: father, id_number: '0000 0000 0000', gender: 'NA', address: 'Synthetic address' },
+    pan: { script: 'latin', name: upper, dob, father_name: father, id_number: 'ZZZZZ0000Z' },
+    bank: { script: 'latin', name: upper, name_native: upper, dob, father_name: father, bank_name: 'Demo Bank of India', account_number: '0000 0000 0000', ifsc: 'DEMO0000000' },
+    epfo: { script: 'latin', name: epfoName, dob, father_name: father, id_number: uan },
+  };
+
+  const member = await one<MemberRow>(
+    `insert into members (uan, demo_password, display_name, slug, scenario, headline,
+       epfo_name, epfo_dob, epfo_father_name, date_of_joining, date_of_exit,
+       employer_name, employer_responsive, eps_service_months, balance_paise,
+       uan_active, e_nomination_filed, aadhaar_linked, documents)
+     values ($1,'--',$2,$3,'explore',$4,$5,$6,$7,$8,null,$9,true,$10,$11,true,false,true,$12)
+     returning *`,
+    [
+      uan, name, slug,
+      'A profile you set up — clean apart from a name that reads differently on EPFO, no exit date, and no nomination',
+      epfoName, dob, father, i.joined || '2021-04-05', (i.employer || 'Meridian Services Pvt Ltd').slice(0, 80), 78, 41_00_00 * 100,
+      JSON.stringify(documents),
+    ],
+  );
+  const memberId = member!.id;
+
+  const currentEmp = (i.employer || 'Meridian Services Pvt Ltd').slice(0, 80);
+  const currentJoined = i.joined || '2021-04-05';
+  const jobs: [string, string, string | null, number][] = [
+    [currentEmp, currentJoined, null, 41],
+    ['Harbour Tech Solutions', '2018-08-01', '2021-03-20', 31],
+    ['First Step Retail Ltd', '2016-06-15', '2018-07-10', 25],
+  ];
+  for (const [emp, from, to, mo] of jobs) {
+    await query(
+      `insert into service_history (member_id, uan, employer_name, from_date, to_date, eps_months)
+       values ($1,$2,$3,$4,$5,$6)`,
+      [memberId, uan, emp, from, to, mo],
+    );
+  }
+
+  return (await startCase(slug))!;
+}
+
 export const loadCase = cache(async (caseId: string): Promise<CaseView | null> => {
   // case, member and event history in a single round trip. Three separate
   // queries cost ~700ms from here; this costs ~230ms.
   const row = await one<{
     facts: CaseFacts;
     member: MemberRow;
+    service: ServiceRow[];
     history: CaseEvent[];
   }>(
     `select c.facts,
             to_jsonb(m.*) as member,
+            coalesce((
+              select json_agg(json_build_object(
+                       'uan', s.uan, 'employer_name', s.employer_name,
+                       'from_date', s.from_date, 'to_date', s.to_date,
+                       'eps_months', s.eps_months)
+                     order by s.from_date desc)
+                from service_history s where s.member_id = m.id), '[]'::json) as service,
             coalesce((
               select json_agg(json_build_object(
                        'type', e.type, 'payload', e.payload,
@@ -194,7 +278,8 @@ export const loadCase = cache(async (caseId: string): Promise<CaseView | null> =
     facts: row.facts,
     resolution,
     previousDays,
-    documents: documentsFor(row.member.slug),
+    documents: documentsFor(row.member.slug, (row.member as { documents?: unknown }).documents),
+    service: row.service ?? [],
     history,
   };
 });
@@ -252,7 +337,7 @@ export async function resetCase(caseId: string): Promise<void> {
   const facts = deriveFacts(
     member,
     service,
-    countBlockingMismatches(documentsFor(member.slug)),
+    countBlockingMismatches(documentsFor(member.slug, member.documents)),
     intakeFor(member.slug),
   );
 

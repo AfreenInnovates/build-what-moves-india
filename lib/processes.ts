@@ -171,3 +171,121 @@ export const EXTRA_PROCESSES = [
     fix: 'We pre-draft the grievance citing the specific gate that failed and the dates it failed on, and lay out the escalation ladder with each rung pre-dated: Send Reminder inside the same grievance, then the Regional PF Commissioner, then an RTI — which legally requires a written response within 30 days.',
   },
 ] as const;
+
+/**
+ * The same "what breaks / what we do" content as tight, scannable points.
+ * A judge should be able to read a gate in five seconds, not a paragraph — so
+ * the pages render these bullets, keyed by gate id (and by slug for the two
+ * extra processes).
+ */
+export const POINTS: Record<string, { breaks: string[]; fix: string[] }> = {
+  uan_active: {
+    breaks: [
+      'Removed from the website entirely — older guides now dead-end.',
+      'The OTP goes to your Aadhaar-linked mobile, not the number HR has on file.',
+      'Repeated face-scan failures usually mean your Aadhaar photo is too old.',
+    ],
+    fix: [
+      'We name both apps you need before you start.',
+      'We tell you which phone number the OTP will actually reach.',
+      'We warn you the passbook stays empty 6–24 hours — so you don’t retry.',
+    ],
+  },
+  records_agree: {
+    breaks: [
+      'You type each document in by hand; nothing is compared.',
+      'One character different from Aadhaar is a rejection.',
+      'The request sits with your employer, not EPFO — 7–10 days if they act.',
+      'You discover mismatches one rejection at a time, weeks apart.',
+    ],
+    fix: [
+      'All four records compared in one pass, before you file anything.',
+      'Name, date of birth and parent name checked together, not serially.',
+      'Rule-based matching — never a language model that could hallucinate a match.',
+      'We name which records must change, and who has to change them.',
+    ],
+  },
+  e_nomination: {
+    breaks: [
+      'The task is easy — but it is a hidden prerequisite.',
+      'Without it, the Online Services claim page will not open at all.',
+      'Nothing warns you until you are already trying to claim.',
+    ],
+    fix: [
+      'Promoted from a buried menu item to a gate on the spine.',
+      'The consequence is stated up front: this blocks your claim page.',
+      'It costs a day — it should never be the thing that surprises you.',
+    ],
+  },
+  exit_marked: {
+    breaks: [
+      'No exit date means EPFO still thinks you work there.',
+      'Form 19 and Form 10C cannot be filed without it.',
+      'Only your ex-employer can set it — you can only do it after two months.',
+    ],
+    fix: [
+      'Detected from your service history, not left for you to find.',
+      'We draft the message to your ex-employer, naming the exact field.',
+      'Past two months, we walk you through doing it yourself.',
+    ],
+  },
+  service_history: {
+    breaks: [
+      'Gaps and duplicate UANs make your pension service read short.',
+      'A second UAN splits your record in two.',
+      'Merging needs your identity to match first — the circular trap.',
+    ],
+    fix: [
+      'Your whole history on one timeline, gaps and overlaps marked.',
+      'Multiple UANs detected and explained plainly.',
+      'We sequence it correctly: fix identity first, then merge.',
+    ],
+  },
+  form_selected: {
+    breaks: [
+      'Four forms in one dropdown, no guidance on which is yours.',
+      'The wrong form is a leading cause of rejection.',
+      'You find out ten to twenty days later.',
+    ],
+    fix: [
+      'Three plain questions name the form for you.',
+      'We show the forms we ruled out, and why.',
+      'It reads as advice, not a quiz.',
+    ],
+  },
+  attachments: {
+    breaks: [
+      'Only needed under five years of service on amounts over ₹50,000.',
+      'The requirement is not surfaced until you are already filing.',
+      'PDF only, under 2 MB — easy to get wrong.',
+    ],
+    fix: [
+      'We work out whether you need it from your service and balance.',
+      'You are told before you start, not at the upload step.',
+      'If you do not need it, the gate never appears.',
+    ],
+  },
+  track: {
+    breaks: [
+      'A status word on a separate site, behind a separate login.',
+      'No forecast, no cause, no next step.',
+    ],
+    fix: [
+      'A number of working days that shrinks as gates clear.',
+      'What is blocking it, and what you can do today.',
+      'A link you can bookmark, share, or return to next week.',
+    ],
+  },
+  grievance: {
+    breaks: [
+      'A free-text box with no clue which detail matters.',
+      'Routes to one of 135 offices; typically 15–30 working days.',
+      'The escalation ladder above it is real but undocumented.',
+    ],
+    fix: [
+      'A grievance pre-drafted citing the exact gate that failed, with dates.',
+      'The escalation ladder laid out — Reminder → RPFC → RTI — each pre-dated.',
+      'An RTI legally compels a written response within 30 days.',
+    ],
+  },
+};
