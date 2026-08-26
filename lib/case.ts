@@ -72,8 +72,8 @@ export function intakeFor(slug: string): Partial<Intake> {
 
 /**
  * Stand-in for the deterministic matcher (slice 3). It counts how many of the
- * compared fields disagree across the four records — name, date of birth and
- * parent name — because a mismatch on any one of them is a rejection. The real
+ * compared fields disagree across the four records - name, date of birth and
+ * parent name - because a mismatch on any one of them is a rejection. The real
  * one bands each pair and explains which value wins and why.
  */
 export function countBlockingMismatches(docs: Record<string, DocumentValues>): number {
@@ -95,13 +95,22 @@ export async function listMembers(): Promise<MemberRow[]> {
  * obvious version issues one query per member; at ~230ms to Neon that turned
  * the account picker into a two-second wait.
  */
-export async function listMembersWithService(): Promise<(MemberRow & { service: ServiceRow[] })[]> {
-  return query<MemberRow & { service: ServiceRow[] }>(
+export async function listMembersWithService(): Promise<
+  (MemberRow & { service: ServiceRow[]; caseFacts: CaseFacts | null })[]
+> {
+  // The saved case facts come along too. Without them the picker re-derives from
+  // the member row and always shows a member's ORIGINAL day count, while their
+  // dashboard shows the current one - the same person reading as 8 days on one
+  // screen and 3 on the next.
+  return query<MemberRow & { service: ServiceRow[]; caseFacts: CaseFacts | null }>(
     `select m.*, coalesce(
        (select json_agg(json_build_object(
-          'uan', s.uan, 'from_date', s.from_date,
-          'to_date', s.to_date, 'eps_months', s.eps_months))
-        from service_history s where s.member_id = m.id), '[]'::json) as service
+          'uan', s.uan, 'employer_name', s.employer_name,
+          'from_date', s.from_date, 'to_date', s.to_date,
+          'eps_months', s.eps_months))
+        from service_history s where s.member_id = m.id), '[]'::json) as service,
+       (select c.facts from cases c where c.member_id = m.id
+         order by c.created_at desc limit 1) as "caseFacts"
      from members m
      order by m.scenario desc, m.slug`,
   );
@@ -165,8 +174,8 @@ export async function startCase(slug: string): Promise<string | null> {
 
 /**
  * A blank-slate profile for exploring the product: a name, three employers, and
- * a couple of realistic, fixable problems. Everything — the member, its
- * synthesized documents, and the service history — is written to the database,
+ * a couple of realistic, fixable problems. Everything - the member, its
+ * synthesized documents, and the service history - is written to the database,
  * so the new case behaves exactly like a seeded one and survives a refresh.
  */
 export interface NewProfileInput {
@@ -207,7 +216,7 @@ export async function createOwnProfile(input: NewProfileInput | string): Promise
      returning *`,
     [
       uan, name, slug,
-      'A profile you set up — clean apart from a name that reads differently on EPFO, no exit date, and no nomination',
+      'A profile you set up - clean apart from a name that reads differently on EPFO, no exit date, and no nomination',
       epfoName, dob, father, i.joined || '2021-04-05', (i.employer || 'Meridian Services Pvt Ltd').slice(0, 80), 78, 41_00_00 * 100,
       JSON.stringify(documents),
     ],
@@ -318,6 +327,68 @@ export async function applyFix(caseId: string, gateId: GateId): Promise<void> {
       after.totalDays,
     ],
   );
+}
+
+
+/**
+ * Put every example back to how it started.
+ *
+ * Reviewers share one database, and startCase reuses a member's existing case
+ * rather than creating a new one, so whatever the last person cleared is what the
+ * next person sees. Resetting per-case would cost seven round trips each; this
+ * does the whole set in a handful by batching the writes.
+ */
+export async function resetAllCases(): Promise<number> {
+  const rows = await query<{
+    case_id: string;
+    member: MemberRow;
+    service: ServiceRow[];
+  }>(
+    `select c.id as case_id,
+            to_jsonb(m.*) as member,
+            coalesce((
+              select json_agg(json_build_object(
+                       'uan', s.uan, 'employer_name', s.employer_name,
+                       'from_date', s.from_date, 'to_date', s.to_date,
+                       'eps_months', s.eps_months))
+                from service_history s where s.member_id = m.id), '[]'::json) as service
+       from cases c join members m on m.id = c.member_id`,
+  );
+  if (rows.length === 0) return 0;
+
+  const payload = rows.map((r) => {
+    const facts = deriveFacts(
+      r.member,
+      r.service ?? [],
+      countBlockingMismatches(documentsFor(r.member.slug, r.member.documents)),
+      intakeFor(r.member.slug),
+    );
+    return { case_id: r.case_id, facts, days: resolve(SPEC, facts).totalDays };
+  });
+
+  const ids = payload.map((p) => p.case_id);
+
+  await query(
+    `update cases c set facts = x.facts, updated_at = now()
+       from jsonb_to_recordset($1::jsonb) as x(case_id uuid, facts jsonb)
+      where c.id = x.case_id`,
+    [JSON.stringify(payload.map((p) => ({ case_id: p.case_id, facts: p.facts })))],
+  );
+  await query(`delete from events where case_id = any($1::uuid[])`, [ids]);
+  await query(`delete from gate_states where case_id = any($1::uuid[])`, [ids]);
+
+  for (const p of payload) {
+    await persistGateStates(p.case_id, resolve(SPEC, p.facts));
+  }
+
+  await query(
+    `insert into events (case_id, type, payload, days_remaining)
+     select x.case_id, 'case_opened', '{}'::jsonb, x.days
+       from jsonb_to_recordset($1::jsonb) as x(case_id uuid, days int)`,
+    [JSON.stringify(payload.map((p) => ({ case_id: p.case_id, days: p.days })))],
+  );
+
+  return payload.length;
 }
 
 export async function resetCase(caseId: string): Promise<void> {

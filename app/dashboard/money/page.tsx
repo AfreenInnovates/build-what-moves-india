@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Icon } from '@/components/Icon';
 import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
 import { PageHead, StatTile } from '@/components/panels';
@@ -22,7 +23,7 @@ export default async function MoneyPage() {
       <PageHead
         icon="money"
         title="My Money"
-        lead="What has built up in your EPF, and where it came from. Your savings (EPF) and your pension (EPS) are two separate pots from the same monthly deduction — this page is the savings pot."
+        lead="What has built up in your EPF, and where it came from. Your savings (EPF) and your pension (EPS) are two separate pots from the same monthly deduction - this page is the savings pot."
       />
 
       <div className="mt-6 max-w-[860px] space-y-6">
@@ -53,13 +54,13 @@ export default async function MoneyPage() {
               <p className="mt-1 text-[14px] leading-relaxed text-ink-800">
                 A separate entitlement based on your years of service, not a balance you can see.{' '}
                 <Link href="/dashboard/pension" className="font-semibold text-teal-700 hover:underline">
-                  Tracked here →
+                  Tracked here <Icon name="arrow" size={14} aria-hidden />
                 </Link>
               </p>
             </div>
           </div>
           <p className="mt-3 text-[12.5px] text-ink-500">
-            The monthly figure is an illustration — total balance spread evenly over your service. Real
+            The monthly figure is an illustration - total balance spread evenly over your service. Real
             contributions vary with salary and are not published per member.
           </p>
         </section>

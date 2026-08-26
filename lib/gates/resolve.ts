@@ -5,11 +5,10 @@ import { evaluate } from './predicate';
 
 /**
  * Pure. Facts in, ordered gates and a number of days out. No I/O, no dates, no
- * randomness — which is what makes the countdown testable.
+ * randomness - which is what makes the countdown testable.
  */
 export function resolve(spec: GateSpec, facts: CaseFacts): Resolution {
   const ordered = topoSort(spec.gates);
-  const byId = new Map(ordered.map((g) => [g.id, g]));
 
   const status = new Map<GateId, GateStatus>();
   const route = new Map<GateId, FixRoute | null>();
@@ -27,7 +26,7 @@ export function resolve(spec: GateSpec, facts: CaseFacts): Resolution {
     }
     // first matching route wins; the spec guarantees a final always-true entry
     const match = gate.routes.find((r) => evaluate(r.when, facts));
-    if (!match) throw new Error(`gate "${gate.id}" has no matching route — spec is incomplete`);
+    if (!match) throw new Error(`gate "${gate.id}" has no matching route - spec is incomplete`);
     route.set(gate.id, match.route);
 
     // you cannot act on a gate whose prerequisites are themselves unresolved
@@ -70,6 +69,7 @@ export function resolve(spec: GateSpec, facts: CaseFacts): Resolution {
   const gates: ResolvedGate[] = ordered.map((gate, i) => ({
     id: gate.id,
     title: gate.title,
+    problem: gate.problem,
     blocks: gate.blocks,
     status: status.get(gate.id)!,
     order: i,

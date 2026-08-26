@@ -5,7 +5,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 /**
  * How the balance built up, month by month. An area chart climbing left to
- * right, flat where there was a gap in contributions — so a break in your record
+ * right, flat where there was a gap in contributions - so a break in your record
  * is something you can see, not just read about.
  */
 export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
@@ -46,7 +46,7 @@ export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
       <div className="flex items-baseline justify-between">
         <h2 className="text-[16px] font-bold text-ink-900">How it built up</h2>
         <span className="tabular text-[13px] font-semibold text-ink-500">
-          {points[0].year} → {points.at(-1)!.year}
+          {points[0].year} to {points.at(-1)!.year}
         </span>
       </div>
 
@@ -99,7 +99,7 @@ export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
         </span>
         {data.points.some((p) => !p.employer) && (
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-4 rounded-xs bg-wait-soft" /> gap — no contributions
+            <span className="h-2.5 w-4 rounded-xs bg-wait-soft" /> gap - no contributions
           </span>
         )}
         <span className="ml-auto tabular font-semibold text-ink-700">Now: {inr(total)}</span>
@@ -115,10 +115,10 @@ export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
                 {MONTHS[p.month - 1]} {p.year}
               </span>
               <span className="min-w-0 flex-1 truncate text-ink-700">
-                {p.employer ?? <span className="text-wait">gap — no contribution</span>}
+                {p.employer ?? <span className="text-wait">gap - no contribution</span>}
               </span>
               <span className={`tabular shrink-0 font-semibold ${p.added > 0 ? 'text-go' : 'text-ink-300'}`}>
-                {p.added > 0 ? `+${inr(p.added)}` : '—'}
+                {p.added > 0 ? `+${inr(p.added)}` : '-'}
               </span>
             </li>
           ))}

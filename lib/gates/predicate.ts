@@ -1,6 +1,6 @@
 import type { CaseFacts, Predicate } from './types';
 
-/** Pure, total, and small enough to read in one sitting — which is the point. */
+/** Pure, total, and small enough to read in one sitting - which is the point. */
 export function evaluate(p: Predicate, facts: CaseFacts): boolean {
   switch (p.op) {
     case 'true':

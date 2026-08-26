@@ -4,8 +4,8 @@ import { yes, no, all, always } from './predicate';
 /**
  * Seven gates, in dependency order, replacing five hosts and a mobile app.
  *
- * Every latency carries provenance. EPFO policy moves — the auto-settlement
- * ceiling and the DigiLocker Joint Declaration route both changed recently — so
+ * Every latency carries provenance. EPFO policy moves - the auto-settlement
+ * ceiling and the DigiLocker Joint Declaration route both changed recently - so
  * an unattributed number is a liability. Carrying the source and the date it was
  * checked means a stale figure is visible rather than quietly wrong, and adding
  * a new route when policy changes is a config edit, not a release.
@@ -33,8 +33,9 @@ export const SPEC: GateSpec = {
   gates: [
     {
       id: 'uan_active',
-      title: 'UAN activated',
-      blocks: 'Passbook, UAN card, transfers and every online claim stay locked.',
+      title: 'Your PF account is switched on',
+      problem: 'Your PF account has not been switched on yet',
+      blocks: 'Nothing online works until this is done. You cannot see your balance, move an old account, or ask for your money.',
       clears: all(yes('uanActive'), yes('aadhaarLinked')),
       appliesWhen: always,
       dependsOn: [],
@@ -58,8 +59,9 @@ export const SPEC: GateSpec = {
 
     {
       id: 'records_agree',
-      title: 'Your four records agree',
-      blocks: 'Any claim you file is rejected on a data mismatch.',
+      title: 'Your details match everywhere',
+      problem: 'Your name or details are written differently in different places',
+      blocks: 'Your details are written differently on different records. EPFO compares them letter by letter, so the claim is sent straight back.',
       clears: { op: 'lte', fact: 'blockingMismatches', value: 0 },
       appliesWhen: always,
       dependsOn: ['uan_active'],
@@ -116,8 +118,9 @@ export const SPEC: GateSpec = {
 
     {
       id: 'e_nomination',
-      title: 'e-Nomination filed',
-      blocks: 'The Online Services claim page will not open at all.',
+      title: 'You have named your family member',
+      problem: 'You have not said who should receive this money',
+      blocks: 'You have not yet named who should get this money if something happens to you. Until you do, the claim page will not even open.',
       clears: yes('eNominationFiled'),
       appliesWhen: always,
       dependsOn: ['uan_active'],
@@ -141,8 +144,9 @@ export const SPEC: GateSpec = {
 
     {
       id: 'exit_marked',
-      title: 'Date of exit marked',
-      blocks: 'Form 19 and Form 10C cannot be filed without it.',
+      title: 'Your last working day is recorded',
+      problem: 'EPFO still thinks you are working',
+      blocks: 'EPFO has no record of the day you left, so they still count you as working. They do not release savings to someone who is still employed.',
       clears: yes('exitMarked'),
       appliesWhen: no('stillEmployed'),
       dependsOn: ['uan_active'],
@@ -180,8 +184,9 @@ export const SPEC: GateSpec = {
 
     {
       id: 'service_history',
-      title: 'Service history clean',
-      blocks: 'Pension service reads short, and a second UAN splits your record.',
+      title: 'Your work history is complete',
+      problem: 'There is a break or a split in your work history',
+      blocks: 'Your work history has a break in it, or your savings are split across two accounts. Either way you are credited with fewer years than you worked.',
       clears: all(
         { op: 'lte', fact: 'distinctUanCount', value: 1 },
         { op: 'lte', fact: 'serviceGapMonths', value: 0 },
@@ -219,8 +224,9 @@ export const SPEC: GateSpec = {
 
     {
       id: 'form_selected',
-      title: 'Correct form chosen',
-      blocks: 'Filing the wrong form is a leading cause of rejection.',
+      title: 'The right form is chosen',
+      problem: 'You have not picked which form to send',
+      blocks: 'There is a different form for taking your money out, for your pension, and for a partial advance. Sending the wrong one is one of the most common reasons a claim comes back.',
       clears: yes('formSelected'),
       appliesWhen: always,
       dependsOn: ['e_nomination', 'exit_marked'],
@@ -241,8 +247,9 @@ export const SPEC: GateSpec = {
 
     {
       id: 'attachments',
-      title: 'Form 15G attached',
-      blocks: 'TDS is deducted, and the claim can be returned for the missing PDF.',
+      title: 'Your tax form is attached',
+      problem: 'Your tax form is not attached yet',
+      blocks: 'Without this form, tax is cut from your payout before it reaches you. Attaching it is what stops that.',
       clears: yes('form15gAttached'),
       appliesWhen: all(
         { op: 'lt', fact: 'continuousServiceMonths', value: 60 },

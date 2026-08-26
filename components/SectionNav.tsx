@@ -7,7 +7,7 @@ import { Icon } from './Icon';
 
 /**
  * A click needs to say "heard you" the instant it lands, or a navigation that
- * takes a beat — a dev-mode route compile, a slow connection — reads as a dead
+ * takes a beat - a dev-mode route compile, a slow connection - reads as a dead
  * button. useLinkStatus reports the pending state of its enclosing Link, so the
  * row you tapped shows a spinner immediately, before the new page is anywhere
  * near ready.

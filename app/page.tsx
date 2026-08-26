@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SPEC } from '@/lib/gates/spec';
+import { LANGUAGE_NATIVE } from '@/lib/language';
 import { Icon, type IconName } from '@/components/Icon';
 import { CountUp } from '@/components/CountUp';
 
@@ -73,6 +74,27 @@ const TONE = {
   coral: 'bg-coral-soft text-coral',
 } as const;
 
+/** What Saathi actually does, said plainly. */
+const SAATHI: { icon: IconName; title: string; body: string }[] = [
+  {
+    icon: 'phone',
+    title: 'Voice or typing, whichever suits you',
+    body: 'Tap the mic and say it, or type it. Answers come back written and read aloud, so it works if reading is hard.',
+  },
+  {
+    icon: 'explain',
+    title: '"Walk me through" starts a guided tour',
+    body: 'It takes over the screen, moves page to page and rings each part in turn, explaining what it is for and why it matters to you.',
+  },
+  {
+    icon: 'records',
+    title: 'It only knows your case',
+    body: 'Every answer is about your own records and your own blockers. It cannot see anybody else, and it will not answer about them.',
+  },
+];
+
+const LANGUAGES = Object.values(LANGUAGE_NATIVE);
+
 export default function Home() {
   return (
     <main className="w-full">
@@ -85,11 +107,12 @@ export default function Home() {
               <Icon name="bolt" size={13} aria-hidden /> EPF withdrawal, unblocked
             </span>
             <h1 className="mt-4 text-[38px] leading-[1.05] font-bold tracking-tight text-ink-900 sm:text-[48px]">
-              Find out what is holding your money{' '}
-              <span className="text-teal-700">before you file</span>, not after you are rejected.
+              Your provident fund,{' '}
+              <span className="text-teal-700">without the guesswork</span>.
             </h1>
             <p className="mt-5 max-w-[52ch] text-[17.5px] leading-relaxed text-ink-700">
-              EPFO rejects about one claim in four, usually because your details disagree across
+              Find out what is holding your money before you file, not after you are rejected. EPFO
+              turns down about one claim in four, usually because your details disagree across
               records that were never built to match. This finds every problem in one look.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -159,7 +182,7 @@ export default function Home() {
 
       {/* --------------------------------------------------------------- how */}
       <section id="how" className="mx-auto w-full max-w-[1120px] scroll-mt-16 px-5 py-16">
-        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">How it works</p>
+        <p className="reveal text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">How it works</p>
         <h2 className="mt-2 text-[30px] leading-tight font-bold tracking-tight text-ink-900">
           Three steps, no forms to hunt for.
         </h2>
@@ -190,14 +213,14 @@ export default function Home() {
       {/* ------------------------------------------------ what we do differently */}
       <section className="border-y border-ink-100 bg-white">
         <div className="mx-auto w-full max-w-[1120px] px-5 py-16">
-          <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">
+          <p className="reveal text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">
             What we do differently
           </p>
           <h2 className="mt-2 text-[30px] leading-tight font-bold tracking-tight text-ink-900">
             Diagnosis first. Then the fix.
           </h2>
 
-          <div className="mt-9 grid gap-4 sm:grid-cols-2">
+          <div className="reveal reveal-2 mt-9 grid gap-4 sm:grid-cols-2">
             {DIFF.map((d) => (
               <div
                 key={d.title}
@@ -218,9 +241,63 @@ export default function Home() {
         </div>
       </section>
 
+      {/* -------------------------------------------------------------- saathi */}
+      <section className="border-b border-ink-100 bg-teal-50/40">
+        <div className="mx-auto grid w-full max-w-[1120px] gap-10 px-5 py-16 lg:grid-cols-[1fr_0.85fr] lg:items-center">
+          <div className="reveal">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">
+              Saathi, the guide inside
+            </p>
+            <h2 className="mt-2 text-[30px] leading-tight font-bold tracking-tight text-ink-900">
+              Ask in your language. Out loud, if you prefer.
+            </h2>
+            <p className="mt-3 max-w-[58ch] text-[15.5px] leading-relaxed text-ink-700">
+              The people this is built for do not all read English, and many would rather speak than
+              type on a phone. So Saathi takes either, in {LANGUAGES.length} languages, and answers
+              in whichever one you used - switch mid-conversation and it switches with you.
+            </p>
+
+            <ul className="mt-6 space-y-3">
+              {SAATHI.map((f) => (
+                <li key={f.title} className="flex gap-3.5">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-teal-700 shadow-[0_1px_3px_rgba(5,81,96,0.10)]">
+                    <Icon name={f.icon} size={19} aria-hidden />
+                  </span>
+                  <div>
+                    <h3 className="text-[16px] font-bold text-ink-900">{f.title}</h3>
+                    <p className="mt-0.5 text-[14.5px] leading-relaxed text-ink-700">{f.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="reveal reveal-2 rounded-xl border border-ink-100 bg-white p-6 shadow-[0_8px_30px_rgba(5,81,96,0.10)]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-ink-500">
+              Speak or type, in any of these
+            </p>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {LANGUAGES.map((l) => (
+                <li
+                  key={l}
+                  className="rounded-full bg-teal-50 px-3 py-1.5 text-[14px] font-semibold text-teal-900"
+                >
+                  {l}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 border-t border-ink-100 pt-4 text-[13.5px] leading-relaxed text-ink-500">
+              Speech in and out runs on Sarvam, built for Indian languages. The day counts Saathi
+              quotes come from the same rule engine as the rest of the site, never from the model,
+              so it cannot invent a number.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ------------------------------------------------------------- hosts */}
       <section className="mx-auto w-full max-w-[1120px] px-5 py-16">
-        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">
+        <p className="reveal text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">
           Why it is hard today
         </p>
         <h2 className="mt-2 text-[30px] leading-tight font-bold tracking-tight text-ink-900">

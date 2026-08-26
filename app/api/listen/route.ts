@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
  * client captures raw PCM through the Web Audio API and encodes a WAV instead.
  *
  * The browser's own speech engine runs alongside this and is what produces the
- * live word-by-word feedback — it cannot be replaced, because Sarvam's API is
+ * live word-by-word feedback - it cannot be replaced, because Sarvam's API is
  * batch and only answers once you stop talking. But the browser engine is weak
  * on Indian names, Indic scripts and code-mixed speech, which is most of what
  * gets said here. So the browser drives the live display, and Sarvam produces

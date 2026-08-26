@@ -2,13 +2,12 @@ import pg from 'pg';
 
 // DATE columns must stay strings. Left as Date objects, node-postgres hands back
 // a local-midnight timestamp, so an exit date of 2026-05-31 reads as 30 May in
-// IST — and every day this product counts would be off by one.
+// IST - and every day this product counts would be off by one.
 pg.types.setTypeParser(1082, (v) => v);
 // BIGINT -> number; balances here are paise and nowhere near 2^53.
 pg.types.setTypeParser(20, (v) => Number(v));
 
 declare global {
-  // eslint-disable-next-line no-var
   var __pgPool: pg.Pool | undefined;
 }
 
@@ -22,7 +21,7 @@ export const pool =
     // Opening a connection costs ~1.9s from India: TCP, then a TLS handshake,
     // then SCRAM auth, each a ~235ms round trip to us-east-2. A query on an
     // already-open connection costs one round trip. So the single most valuable
-    // thing this pool does is not close connections — a 30s idle timeout meant
+    // thing this pool does is not close connections - a 30s idle timeout meant
     // any pause longer than half a minute made the next page load pay the full
     // handshake again.
     idleTimeoutMillis: 10 * 60_000,

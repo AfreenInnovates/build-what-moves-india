@@ -3,7 +3,7 @@ import type { GateId } from './gates/types';
 /**
  * One entry per gate: what EPFO makes you do today, why it fails, and what we
  * do instead. This is the content behind every /fix page and the comparison on
- * the home page — written once, rendered in both places.
+ * the home page - written once, rendered in both places.
  */
 export interface ProcessDoc {
   id: GateId;
@@ -18,7 +18,7 @@ export interface ProcessDoc {
   fix: string;
   /** the steps we actually walk them through */
   steps: string[];
-  /** shown as a callout — the thing nobody tells you */
+  /** shown as a callout - the thing nobody tells you */
   warning?: string;
   /** true when we cannot rebuild it and can only explain it */
   explainOnly?: boolean;
@@ -34,9 +34,9 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
       'Activation was removed from the web portal entirely, so anyone following an older guide hits a dead end. The OTP goes to the mobile number linked to your Aadhaar, not the one your employer has on file, and most people do not know those are different numbers. Repeated face-scan failures usually mean the photograph in your Aadhaar record is too old.',
     fix: 'We cannot rebuild face authentication, and we do not pretend to. Instead we name both apps you need before you start, tell you which phone number the OTP will actually reach, and set the expectation that the passbook stays empty for 6 to 24 hours afterwards.',
     steps: [
-      'Install two separate apps: UMANG, and Aadhaar Face RD. The second one has no interface — it exists only so the first can scan your face.',
+      'Install two separate apps: UMANG, and Aadhaar Face RD. The second one has no interface - it exists only so the first can scan your face.',
       'In UMANG, open EPFO Services and choose UAN Activation via Face Authentication.',
-      'Enter your UAN and the mobile number linked to your Aadhaar. If you are not sure which number that is, check it before you start — a wrong guess costs you the attempt.',
+      'Enter your UAN and the mobile number linked to your Aadhaar. If you are not sure which number that is, check it before you start - a wrong guess costs you the attempt.',
       'Complete the live face scan. It will ask you to blink and turn your head.',
       'Stop. Do not check the passbook yet.',
     ],
@@ -51,17 +51,17 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'Manage → KYC',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'You tick a document type, enter details, and save. The request then sits under "KYC Pending for Approval" and goes to your employer, not to EPFO — 7 to 10 days if they act at all. EPFO treats Aadhaar as the source of truth, so anything that differs from Aadhaar by even one character is a rejection. Worse, you discover mismatches one rejection at a time, each costing a full processing cycle.',
-    fix: 'We compare all four records in one pass, before you file anything. Name, date of birth and parent name are checked across Aadhaar, PAN, bank and EPFO simultaneously, so you see every problem at once instead of serially. The comparison is rule-based, not a language model — a hallucinated match would cost someone their rent.',
+      'You pick a document, type the details in by hand, and save. Nothing is compared against anything. The request then waits with your company - not with EPFO - for 7 to 10 days, if they act at all. EPFO treats your Aadhaar as the correct version, so one letter out of place is enough to be turned down. And you only find out one mistake at a time: fix one, wait, get refused for the next.',
+    fix: 'We check all four together, before you send anything. Your name, date of birth and parent name are compared across Aadhaar, PAN, your bank and EPFO at the same time, so you see every problem at once instead of one refusal at a time. The check is plain rules, not an AI guess - a wrong guess here would cost somebody their rent.',
     steps: [
       'Upload or photograph all four: Aadhaar, PAN, bank passbook or cheque, and your EPFO profile.',
       'We read each one, including passbooks printed in Kannada, Hindi and other Indic scripts.',
       'Confirm what we read. OCR is not perfect and you get the final say before anything is compared.',
-      'We normalise honorifics, initials and script differences, then score every pair and band the result.',
-      'For each blocking difference you get the winning value, which records must change, and who has to change them.',
+      'We line the four up field by field and show you exactly where they differ, character by character, the same way EPFO compares them.',
+      'For each difference we tell you which record is the odd one out, who can change it - you, your company, or the bank - and how long that takes.',
     ],
     warning:
-      'Which route applies to you matters enormously, and it changed recently. If your UAN is Aadhaar-verified you can now file the Joint Declaration yourself through DigiLocker for name and date-of-birth corrections, with no employer approval at all — which is what finally unblocks people whose old company has shut down. If you are not Aadhaar-verified, it falls back to your employer raising it on the Employer Portal, or to the paper declaration. We ask which situation you are in rather than assuming the slowest one.',
+      'Which route applies to you matters enormously, and it changed recently. If your UAN is Aadhaar-verified you can now file the Joint Declaration yourself through DigiLocker for name and date-of-birth corrections, with no employer approval at all - which is what finally unblocks people whose old company has shut down. If you are not Aadhaar-verified, it falls back to your employer raising it on the Employer Portal, or to the paper declaration. We ask which situation you are in rather than assuming the slowest one.',
   },
 
   e_nomination: {
@@ -70,13 +70,13 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'Manage → e-Nomination',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'The task itself is genuinely easy — add a nominee, Aadhaar OTP, done. The problem is that it is a hidden prerequisite. Without a valid e-nomination the Online Services claim page will not open at all, and nothing anywhere warns you. People discover it at the exact moment they try to claim, having already waited weeks for everything else.',
-    fix: 'We promote it from a buried menu item to a gate on the spine, stated up front, with the consequence spelled out: this blocks your claim page entirely. It costs a day. It should never be the thing that surprises you.',
+      'The job itself is easy - name a family member, confirm with a code sent to your phone, done. The problem is that nobody tells you it is required. Until it is done, the page where you ask for your money will not open at all. People find this out at the very moment they try to claim, after already waiting weeks for everything else.',
+    fix: 'We move it out of a buried menu and put it in the main list, with the reason said plainly: until this is done, your claim page will not open. It takes about a day. It should never be the thing that catches you out.',
     steps: [
       'Have your nominee\'s Aadhaar number and date of birth ready.',
       'Add each nominee and the share of the amount they should receive. Shares must total 100%.',
       'Verify with an Aadhaar OTP.',
-      'That is the whole task. It is genuinely quick — the cost is only ever in not knowing it was required.',
+      'That is the whole task. It is genuinely quick - the cost is only ever in not knowing it was required.',
     ],
   },
 
@@ -86,13 +86,13 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'Manage → Mark Exit',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'If your last working day is not recorded, EPFO considers you still employed there, and Form 19 and Form 10C cannot be filed at all. Normally your ex-employer sets it, and they have no incentive to hurry. You can only do it yourself two months after leaving.',
-    fix: 'We detect it from your service history rather than waiting for you to find the menu, and we generate the message to send your ex-employer — naming the exact field and the exact screen they need, so the person receiving it does not have to work out what you want.',
+      'If nobody records the day you left, EPFO counts you as still working there, and the forms for taking your money out cannot be sent at all. Normally your old company enters it, and they are in no hurry. You are only allowed to enter it yourself two months after leaving.',
+    fix: 'We spot it from your job history instead of waiting for you to find the right menu, and we write the message to send your old company for you - naming the exact box and the exact screen, so whoever reads it does not have to guess what you are asking for.',
     steps: [
       'We read your service history and find the employment with no end date.',
       'If it has been under two months, we draft a message for your previous employer with the specific action they need to take.',
       'If it has been over two months, you can set it yourself with an Aadhaar OTP, and we walk you through it.',
-      'Either way you get the date that unblocks Form 19 and Form 10C.',
+      'Either way you end up with the date that lets your claim go through.',
     ],
     warning:
       'Two months is the line. Before it, only your employer can act. After it, you can. Knowing which side you are on changes who you should be chasing today.',
@@ -104,16 +104,16 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'View → Service History, then Online Services → One Member–One EPF Account',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'Gaps, overlaps and missing exit dates make EPFO read your pensionable service as shorter than it was — which is how someone with eleven years of work is told they have under ten. And people who hit a wall often have a second UAN created for them, which splits the record in half. Merging requires your identity to match across both UANs, which is usually the very thing that was broken in the first place.',
-    fix: 'We show your whole employment history as one timeline with gaps and overlaps marked, detect multiple UANs, and sequence the merge correctly — identity first, then merge — instead of letting you attempt it in the order that fails.',
+      'Missing dates and breaks make EPFO count fewer working years than you actually did - which is how someone who worked eleven years gets told they have not reached ten. And when someone gets stuck, a company will often just open them a second PF account, which cuts the record in half. Joining the two back together needs your name and details to match on both, which is usually the thing that was broken to begin with.',
+    fix: 'We lay your whole working life out as one line, mark the breaks, spot a second account if you have one, and put the steps in the order that actually works - get your details matching first, then join the accounts - instead of letting you try it the way that fails.',
     steps: [
       'We lay out every employment period we can see, across every UAN.',
-      'Genuine breaks in contribution are marked. Normal three-week gaps between jobs are not — those are not service breaks and flagging them would be noise.',
-      'If a second UAN exists, we say so plainly and explain why it halves your pension service.',
-      'We file the merge in the right order, after your records agree, because EPFO will not merge two identities it cannot confirm are the same person.',
+      'Genuine breaks in contribution are marked. Normal three-week gaps between jobs are not - those are not service breaks and flagging them would be noise.',
+      'If a second PF account exists, we say so plainly and explain why it cuts your pension years in half.',
+      'We join the accounts only after your details match, because EPFO will not merge two records it cannot confirm belong to the same person.',
     ],
     warning:
-      'Never let anyone create a new UAN to get around a problem. It is the most damaging thing that can happen to your record, and it is usually done with good intentions by an HR team trying to unblock you.',
+      'Never let anyone open you a new PF account to get around a problem. It is the most damaging thing that can happen to your record, and it is almost always done kindly, by an HR team trying to help you.',
   },
 
   form_selected: {
@@ -122,8 +122,8 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'Online Services → Claim (Form-31, 19, 10C & 10D)',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'Filing the wrong form is among the most commonly cited rejection reasons, and the portal gives you four options with no guidance. Form 31 with an "out of service" reason, or Form 10C when you have crossed ten years of service, are routine failures. You find out 10 to 20 days later.',
-    fix: 'Three plain questions — are you still working there, how long were you there, and what is the money for — and we name the form. We also show the forms we ruled out and why, so it reads as advice rather than a quiz.',
+      'Sending the wrong form is one of the most common reasons claims come back, and the portal offers you four of them with no explanation of which is which. Asking for a partial advance when you have actually left, or asking for your pension as one payment after ten years of service, both fail as a matter of course. You find out 10 to 20 days later.',
+    fix: 'Three plain questions - are you still working there, how long were you there, and what is the money for - and we tell you which form to send. We also show the ones we ruled out and why, so it feels like advice rather than a test.',
     steps: [
       'Are you still employed at that company?',
       'How long were you there?',
@@ -131,7 +131,7 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
       'We name one form, explain in a sentence why it is that one, and show the three we ruled out with the reason for each.',
     ],
     warning:
-      'The ten-year mark decides whether your pension pot is a lump sum or a monthly pension you cannot touch until 58. Most people do not know which side of that line they are on until the claim comes back.',
+      'Ten years of service is the line. Below it you can take your pension money as one payment. Above it you cannot, and instead you get a monthly amount once you turn 58. Most people have no idea which side of that line they are on until the claim comes back refused.',
   },
 
   attachments: {
@@ -140,11 +140,11 @@ export const PROCESSES: Record<GateId, ProcessDoc> = {
     epfoPath: 'Online Services → Claim → upload',
     epfoHost: 'unifiedportal-mem.epfindia.gov.in',
     breaks:
-      'If your continuous service is under five years and the amount is over ₹50,000, tax is deducted at source unless you attach Form 15G. The requirement is not surfaced until you are already filing, and the file constraints — PDF, under 2 MB — are easy to miss.',
-    fix: 'We work out whether you need it from your service length and balance, and tell you before you start rather than at the upload step. If you do not need it, the gate never appears.',
+      'If you worked there under five years and you are taking out more than ₹50,000, tax is cut from the money before it reaches you - unless you attach Form 15G. Nobody mentions this until you are already filling in the claim, and the rules about the file itself, a PDF under 2 MB, are easy to miss.',
+    fix: 'We work out whether it applies to you from how long you worked and how much you are claiming, and tell you before you start rather than at the last step. If it does not apply, you never see it at all.',
     steps: [
       'We check your continuous service and the amount being claimed.',
-      'If Form 15G applies, we say why, and what it actually declares — that your total income is below the taxable limit.',
+      'If Form 15G applies, we say why, and what you are actually declaring by signing it - that your income for the year is below the level where tax is due.',
       'Attach it as a PDF under 2 MB.',
     ],
   },
@@ -158,8 +158,8 @@ export const EXTRA_PROCESSES = [
     epfoPath: 'A different host entirely',
     epfoHost: 'passbook.epfindia.gov.in/MemberPassBook/',
     breaks:
-      'A status word on a separate site with a separate login. No forecast, no cause, no next step, and no indication of whether anything is wrong.',
-    fix: 'A number of working days that shrinks as gates clear, with what is blocking it and what you can do today. Your case lives at a link you can bookmark, share or come back to next week.',
+      'One word telling you where your claim stands, on a different website with a different login. No date, no reason, no next step, and no hint that anything is wrong.',
+    fix: 'A count of working days that goes down as you finish each step, with what is holding it up and what you can do today. Your case sits at a link you can save, share, or come back to next week.',
   },
   {
     slug: 'grievance',
@@ -167,61 +167,61 @@ export const EXTRA_PROCESSES = [
     epfoPath: 'Register Grievance → Send Reminder → RPFC → RTI',
     epfoHost: 'epfigms.gov.in',
     breaks:
-      'You write a free-text complaint into a box with no idea what detail matters, it routes to one of 135 field offices, and typically takes 15 to 30 working days. The escalation ladder above it is real but undocumented.',
-    fix: 'We pre-draft the grievance citing the specific gate that failed and the dates it failed on, and lay out the escalation ladder with each rung pre-dated: Send Reminder inside the same grievance, then the Regional PF Commissioner, then an RTI — which legally requires a written response within 30 days.',
+      'You type a complaint into an empty box with no idea which details matter. It goes to one of 135 offices around the country and usually takes 15 to 30 working days. There are further steps you can take if nothing happens, but nobody writes them down.',
+    fix: 'We write the complaint for you, naming exactly which step failed and on what date, and lay out what to do if it is ignored, with the date for each: a reminder inside the same complaint, then the Regional PF Commissioner, then a Right to Information request - which the law says must be answered in writing within 30 days.',
   },
 ] as const;
 
 /**
  * The same "what breaks / what we do" content as tight, scannable points.
- * A judge should be able to read a gate in five seconds, not a paragraph — so
+ * A judge should be able to read a gate in five seconds, not a paragraph - so
  * the pages render these bullets, keyed by gate id (and by slug for the two
  * extra processes).
  */
 export const POINTS: Record<string, { breaks: string[]; fix: string[] }> = {
   uan_active: {
     breaks: [
-      'Removed from the website entirely — older guides now dead-end.',
+      'Removed from the website entirely - older guides now dead-end.',
       'The OTP goes to your Aadhaar-linked mobile, not the number HR has on file.',
       'Repeated face-scan failures usually mean your Aadhaar photo is too old.',
     ],
     fix: [
       'We name both apps you need before you start.',
       'We tell you which phone number the OTP will actually reach.',
-      'We warn you the passbook stays empty 6–24 hours — so you don’t retry.',
+      'We warn you the passbook stays empty 6–24 hours - so you don’t retry.',
     ],
   },
   records_agree: {
     breaks: [
       'You type each document in by hand; nothing is compared.',
       'One character different from Aadhaar is a rejection.',
-      'The request sits with your employer, not EPFO — 7–10 days if they act.',
+      'The request sits with your employer, not EPFO - 7–10 days if they act.',
       'You discover mismatches one rejection at a time, weeks apart.',
     ],
     fix: [
       'All four records compared in one pass, before you file anything.',
       'Name, date of birth and parent name checked together, not serially.',
-      'Rule-based matching — never a language model that could hallucinate a match.',
+      'Rule-based matching - never a language model that could hallucinate a match.',
       'We name which records must change, and who has to change them.',
     ],
   },
   e_nomination: {
     breaks: [
-      'The task is easy — but it is a hidden prerequisite.',
+      'The task is easy - but it is a hidden prerequisite.',
       'Without it, the Online Services claim page will not open at all.',
       'Nothing warns you until you are already trying to claim.',
     ],
     fix: [
       'Promoted from a buried menu item to a gate on the spine.',
       'The consequence is stated up front: this blocks your claim page.',
-      'It costs a day — it should never be the thing that surprises you.',
+      'It costs a day - it should never be the thing that surprises you.',
     ],
   },
   exit_marked: {
     breaks: [
       'No exit date means EPFO still thinks you work there.',
       'Form 19 and Form 10C cannot be filed without it.',
-      'Only your ex-employer can set it — you can only do it after two months.',
+      'Only your ex-employer can set it - you can only do it after two months.',
     ],
     fix: [
       'Detected from your service history, not left for you to find.',
@@ -233,7 +233,7 @@ export const POINTS: Record<string, { breaks: string[]; fix: string[] }> = {
     breaks: [
       'Gaps and duplicate UANs make your pension service read short.',
       'A second UAN splits your record in two.',
-      'Merging needs your identity to match first — the circular trap.',
+      'Merging needs your identity to match first - the circular trap.',
     ],
     fix: [
       'Your whole history on one timeline, gaps and overlaps marked.',
@@ -257,7 +257,7 @@ export const POINTS: Record<string, { breaks: string[]; fix: string[] }> = {
     breaks: [
       'Only needed under five years of service on amounts over ₹50,000.',
       'The requirement is not surfaced until you are already filing.',
-      'PDF only, under 2 MB — easy to get wrong.',
+      'PDF only, under 2 MB - easy to get wrong.',
     ],
     fix: [
       'We work out whether you need it from your service and balance.',
@@ -284,7 +284,7 @@ export const POINTS: Record<string, { breaks: string[]; fix: string[] }> = {
     ],
     fix: [
       'A grievance pre-drafted citing the exact gate that failed, with dates.',
-      'The escalation ladder laid out — Reminder → RPFC → RTI — each pre-dated.',
+      'The escalation ladder laid out - Reminder → RPFC → RTI - each pre-dated.',
       'An RTI legally compels a written response within 30 days.',
     ],
   },

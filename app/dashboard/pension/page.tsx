@@ -56,7 +56,7 @@ export default async function PensionPage() {
             {p.crossedTenYears ? (
               <>
                 You have <span className="font-bold">passed ten years</span>. Your EPS is now a{' '}
-                <span className="font-bold">monthly pension from age 58</span> — it can no longer be
+                <span className="font-bold">monthly pension from age 58</span> - it can no longer be
                 taken as a lump sum. If that is not what you want, this was the line to know about
                 before crossing it.
               </>

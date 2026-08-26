@@ -25,6 +25,7 @@ import {
   LuEye,
   LuChevronDown,
   LuChevronUp,
+  LuArrowRight,
 } from 'react-icons/lu';
 import type { IconType } from 'react-icons';
 
@@ -53,7 +54,8 @@ export type IconName =
   | 'phone'
   | 'eye'
   | 'down'
-  | 'up';
+  | 'up'
+  | 'arrow';
 
 const MAP: Record<IconName, IconType> = {
   preflight: LuTarget,
@@ -81,6 +83,7 @@ const MAP: Record<IconName, IconType> = {
   eye: LuEye,
   down: LuChevronDown,
   up: LuChevronUp,
+  arrow: LuArrowRight,
 };
 
 /** One icon set for the whole app, from Lucide via react-icons. */

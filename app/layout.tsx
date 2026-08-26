@@ -3,7 +3,7 @@ import { Inter, Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader, SiteFooter } from "@/components/Chrome";
 
-// Inter for body — crisp and highly legible at small sizes on cheap screens,
+// Inter for body - crisp and highly legible at small sizes on cheap screens,
 // which is what this audience has. Bricolage Grotesque for headings adds warmth
 // and character without costing readability.
 const inter = Inter({

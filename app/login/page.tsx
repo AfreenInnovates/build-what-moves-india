@@ -6,6 +6,7 @@ import { deriveFacts } from '@/lib/gates/facts';
 import { documentsFor, intakeFor, countBlockingMismatches } from '@/lib/case';
 import { CasePicker, type PickerCard } from '@/components/CasePicker';
 import { NewProfile } from '@/components/NewProfile';
+import { ResetExamples } from '@/components/ResetExamples';
 
 // This page reads members from Postgres, so it must render per request.
 export const dynamic = 'force-dynamic';
@@ -16,10 +17,18 @@ const SCENARIO: Record<string, PickerCard['scenario']> = {
   advance: { label: 'Advance, still employed', tone: 'warning' },
 };
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reset?: string }>;
+}) {
+  const justReset = (await searchParams).reset === '1';
   const cards: PickerCard[] = (await listMembersWithService()).map((m) => {
-    const mismatches = countBlockingMismatches(documentsFor(m.slug, m.documents));
-    const r = resolve(SPEC, deriveFacts(m, m.service, mismatches, intakeFor(m.slug)));
+    // prefer the live case; fall back to a fresh derivation for anyone not opened yet
+    const facts =
+      m.caseFacts ??
+      deriveFacts(m, m.service, countBlockingMismatches(documentsFor(m.slug, m.documents)), intakeFor(m.slug));
+    const r = resolve(SPEC, facts);
     return {
       id: m.id,
       slug: m.slug,
@@ -29,7 +38,14 @@ export default async function LoginPage() {
       days: r.totalDays,
       blocking: r.blockingCount,
       balance: Math.round(m.balance_paise / 100),
-      scenario: SCENARIO[m.scenario] ?? { label: m.scenario, tone: 'warning' },
+      // The scenario column records how this person STARTED. Once their gates are
+      // cleared the card was still saying "Claim rejected" next to a day count of
+      // 3, which is the fully-cleared baseline - the tag contradicting the number
+      // printed beside it. What the card shows now is where they actually stand.
+      scenario:
+        r.blockingCount === 0
+          ? { label: 'Ready to file', tone: 'success' as const }
+          : (SCENARIO[m.scenario] ?? { label: m.scenario, tone: 'warning' as const }),
     };
   });
 
@@ -46,14 +62,15 @@ export default async function LoginPage() {
         Whose claim shall we look at?
       </h1>
       <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed text-ink-700">
-        Six people, each stuck for a different real reason. One tap — no password, no typing.
+        Six people who have opened a claim to take their EPF money out, and each one is stuck for a
+        different real reason: a name that does not match, an exit date nobody recorded, a second
+        UAN, a nomination never filed. Sign in as any of them with the password shown on their
+        card, or set up your own case.
       </p>
 
-      <CasePicker cards={cards} />
+      <CasePicker cards={cards} fresh={<NewProfile />} />
 
-      <div className="mt-6">
-        <NewProfile />
-      </div>
+      <ResetExamples justReset={justReset} />
     </main>
   );
 }

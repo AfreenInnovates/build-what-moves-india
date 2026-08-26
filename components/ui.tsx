@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 /**
  * USWDS-shaped primitives. The federal design system solved these patterns for
- * exactly our problem — dense procedural information, read under stress, on bad
- * hardware — so we borrow the structure and keep our own colour.
+ * exactly our problem - dense procedural information, read under stress, on bad
+ * hardware - so we borrow the structure and keep our own colour.
  */
 
 type Tone = 'info' | 'warning' | 'error' | 'success';
@@ -31,7 +31,7 @@ export function Alert({
       <div className={`w-1.5 shrink-0 ${t.bar}`} aria-hidden />
       <div className="px-4 py-3.5">
         <p className={`text-[13px] font-bold uppercase tracking-[0.08em] ${t.label}`}>{title}</p>
-        <div className="mt-1.5 text-[15px] leading-relaxed text-ink-800">{children}</div>
+        <div className="mt-1.5 text-[16px] leading-relaxed text-ink-800">{children}</div>
       </div>
     </div>
   );
@@ -66,7 +66,7 @@ export function ProcessList({ steps }: { steps: string[] }) {
           <span className="tabular absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-teal-700 bg-white text-[13px] font-bold text-teal-700">
             {i + 1}
           </span>
-          <p className="pt-0.5 text-[15.5px] leading-relaxed text-ink-700">{s}</p>
+          <p className="pt-0.5 text-[16.5px] leading-relaxed text-ink-700">{s}</p>
         </li>
       ))}
     </ol>

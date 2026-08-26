@@ -4,6 +4,7 @@ import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
 import { Assistant } from '@/components/Assistant';
 import { SectionNav } from '@/components/SectionNav';
+import { BackToCases } from '@/components/BackToCases';
 import { Icon } from '@/components/Icon';
 import { alerts } from '@/lib/insights';
 
@@ -22,14 +23,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="mx-auto flex w-full max-w-[1680px] gap-0 px-0 lg:px-6">
       <aside className="hidden w-[300px] shrink-0 border-r border-ink-100 bg-white lg:block">
-        <div className="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto px-4 py-6">
+        <div className="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto px-4 py-6">
           <div className="mb-5 grid grid-cols-2 gap-2">
-            <Link
-              href="/login"
-              className="flex items-center justify-center gap-1.5 rounded-md border-2 border-ink-100 bg-white px-2 py-2.5 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
-            >
+            <BackToCases className="flex items-center justify-center gap-1.5 rounded-md border-2 border-ink-100 bg-white px-2 py-2.5 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700 disabled:opacity-60">
               <Icon name="back" size={15} aria-hidden /> Cases
-            </Link>
+            </BackToCases>
             <Link
               href="/"
               className="flex items-center justify-center gap-1.5 rounded-md border-2 border-ink-100 bg-white px-2 py-2.5 text-[13px] font-semibold text-ink-700 transition hover:border-teal-700 hover:text-teal-700"
@@ -43,7 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </p>
           <p className="tabular text-[12.5px] text-ink-500">UAN {member.uan}</p>
 
-          <div className="mt-4 rounded-sm bg-ink-50 px-3 py-3">
+          <div className="mt-4 rounded-sm bg-ink-50 px-3 py-3" data-tour="countdown">
             <p className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-ink-500">
               {done === applicable ? 'Ready to file in' : 'Your money is'}
             </p>
@@ -92,16 +90,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           employer: member.employer_name,
           totalDays: r.totalDays,
         }}
-        gates={r.gates.map((g) => ({
-          id: g.id,
-          title: g.title,
-          status: g.status,
-          blocks: g.blocks,
-          actor: g.actor,
-          latencyDays: g.latencyDays,
-          routeLabel: g.route?.label ?? null,
-          onCriticalPath: g.onCriticalPath,
-        }))}
       />
     </div>
   );

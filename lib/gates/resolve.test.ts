@@ -133,6 +133,10 @@ describe('the countdown only moves for work that actually matters', () => {
     seq.push(resolve(SPEC, f).totalDays);
     f = { ...f, distinctUanCount: 1 };
     seq.push(resolve(SPEC, f).totalDays);
+    // Ravi's record carries a break between his third and fourth job, so the
+    // service history is a blocker in its own right and has to clear too
+    f = { ...f, serviceGapMonths: 0 };
+    seq.push(resolve(SPEC, f).totalDays);
     f = { ...f, eNominationFiled: true, formSelected: true, form15gAttached: true };
     seq.push(resolve(SPEC, f).totalDays);
 

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Animates from `from` (the previous reading, straight out of the events table)
  * to `days`. Because the starting point is persisted rather than held in React
- * state, the drop still plays after a full page navigation — and it never
+ * state, the drop still plays after a full page navigation - and it never
  * replays on a plain refresh, because by then the two values are equal.
  */
 export function Countdown({

@@ -20,7 +20,7 @@ export default async function ActionsPage() {
       <PageHead
         icon="actions"
         title="Action Center"
-        lead="Everything standing between you and your money, in the order it has to be cleared. Each item says who has to act — you, your employer, or EPFO — and how long it takes."
+        lead="Everything standing between you and your money, in the order it has to be cleared. Each item says who has to act - you, your employer, or EPFO - and how long it takes."
       />
 
       <div className="mt-6 max-w-[820px] space-y-6">

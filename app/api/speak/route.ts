@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { caseIdFromCookie, withinLimit, tooLarge } from '@/lib/guard';
+import { caseIdFromCookie, withinLimit, tooLarge, readJson } from '@/lib/guard';
 
 export const runtime = 'nodejs';
 
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
  *   bulbul:v2 / anushka   741ms
  *   bulbul:v3 / ritu     1513ms
  *   bulbul:v3 / shreya   3129ms
- * Sample rate is not the lever it looks like — Sarvam already defaults to 22050Hz.
+ * Sample rate is not the lever it looks like - Sarvam already defaults to 22050Hz.
  */
 export async function POST(req: Request) {
   const caseId = await caseIdFromCookie();
@@ -22,11 +22,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'too many requests' }, { status: 429 });
   }
 
-  const { text, language = 'en-IN' } = (await req.json()) as {
-    text: string;
-    language?: string;
-  };
-  if (!text?.trim()) return NextResponse.json({ error: 'empty' }, { status: 400 });
+  const body = await readJson<{ text?: unknown; language?: unknown }>(req);
+  const text = typeof body?.text === 'string' ? body.text : '';
+  const language = typeof body?.language === 'string' ? body.language : 'en-IN';
+  if (!text.trim()) return NextResponse.json({ error: 'empty' }, { status: 400 });
   if (tooLarge(text, 4000)) return NextResponse.json({ error: 'too long' }, { status: 413 });
   // only the language tags we actually use; never pass user input straight through
   const lang = /^[a-z]{2}-[A-Z]{2}$/.test(language) ? language : 'en-IN';

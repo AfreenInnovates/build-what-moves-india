@@ -4,13 +4,20 @@ import type { ServiceRow } from './gates/facts';
 /**
  * Everything the dashboard panels show, derived from one case.
  *
- * The point of these panels is not more screens — it is answering "where did
+ * The point of these panels is not more screens - it is answering "where did
  * this break in the first place". So every figure here traces back to a real
  * field on the member, the service history, or the four uploaded records.
  * Anything estimated is labelled as such and never dressed up as a fact.
  */
 
 const rupee = (paise: number) => Math.round(paise / 100);
+/** "1st", "2nd", "3rd" - so a job can be named by its place in a working life. */
+export const ordinal = (n: number) => {
+  const rest = n % 100;
+  if (rest >= 11 && rest <= 13) return `${n}th`;
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+};
+
 export const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 const monthsToYM = (m: number) => {
@@ -19,6 +26,20 @@ const monthsToYM = (m: number) => {
   if (y && mo) return `${y} yr ${mo} mo`;
   if (y) return `${y} yr`;
   return `${mo} mo`;
+};
+
+/**
+ * The same span, written out. "1 mo" belongs in a stat tile where space is the
+ * constraint; in the middle of a sentence it reads like an abbreviation someone
+ * forgot to finish.
+ */
+export const monthsInWords = (m: number) => {
+  const y = Math.floor(m / 12);
+  const mo = m % 12;
+  const parts: string[] = [];
+  if (y) parts.push(`${y} year${y === 1 ? '' : 's'}`);
+  if (mo) parts.push(`${mo} month${mo === 1 ? '' : 's'}`);
+  return parts.join(' and ') || '0 months';
 };
 
 const fmtDate = (d: string | null) =>
@@ -41,6 +62,17 @@ export interface Employer {
   gapBefore: number;
   /** the current job with no recorded last-working-day */
   exitMissing: boolean;
+  /** where this sits in your working life, 1 being the first job you ever had */
+  position: number;
+  /**
+   * How long the problem here has been sitting in your record, in months.
+   *
+   * This is the part nobody is ever told. A second account opened in 2019 is not
+   * a thing that went wrong today - it has been quietly shortening your pension
+   * for years, and the first anyone hears of it is the day the claim bounces.
+   * Null when this job has no problem, or when the problem has no start date.
+   */
+  problemAgeMonths: number | null;
 }
 
 export function employment(c: CaseView): { primaryUan: string; rows: Employer[] } {
@@ -53,6 +85,12 @@ export function employment(c: CaseView): { primaryUan: string; rows: Employer[] 
     const prev = sorted[i - 1];
     const gapBefore = prev?.to_date ? gapMonths(prev.to_date, s.from_date) : 0;
     const isCurrent = s.to_date === null;
+    const onSecondUan = s.uan !== primaryUan;
+    // A split account dates from the day this job started; a gap dates from the
+    // day the previous job ended. A missing exit date has no honest start date -
+    // nobody recorded the day it should have begun - so it stays null.
+    const startedAt = onSecondUan ? s.from_date : gapBefore > 0 ? prev.to_date : null;
+
     return {
       name: s.employer_name ?? 'Employer',
       uan: s.uan,
@@ -60,13 +98,20 @@ export function employment(c: CaseView): { primaryUan: string; rows: Employer[] 
       to: s.to_date,
       months: s.eps_months,
       isCurrent,
-      onSecondUan: s.uan !== primaryUan,
+      onSecondUan,
       gapBefore,
       exitMissing: isCurrent && !c.facts.exitMarked && !c.facts.stillEmployed,
+      position: i + 1,
+      problemAgeMonths: startedAt ? gapMonths(startedAt, today()) : null,
     };
   });
 
   return { primaryUan, rows: rows.reverse() }; // newest first for display
+}
+
+/** Today as YYYY-MM-DD, so ages are measured against the same clock everywhere. */
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function gapMonths(a: string, b: string): number {
@@ -100,29 +145,29 @@ export function transferStory(c: CaseView): TransferStory {
     if (r.onSecondUan)
       mistakes.push({
         where: r.name,
-        what: 'A second UAN was created here, splitting your record in two.',
+        what: 'This company started you a brand-new PF account instead of using the one you already had. Your savings now sit in two separate accounts, and EPFO reads you as two different people. They have to be joined back into one before any money comes out.',
       });
     if (r.gapBefore > 0)
       mistakes.push({
         where: r.name,
-        what: `A ${monthsToYM(r.gapBefore)} gap in contributions sits just before this job.`,
+        what: `For ${monthsInWords(r.gapBefore)} before this job, no money went into your PF at all. EPFO does not know why. Those months do not count towards your pension, so it is worth saying whether you were between jobs or your employer simply stopped paying.`,
       });
     if (r.exitMissing)
       mistakes.push({
         where: r.name,
-        what: 'Your last working day was never marked, so EPFO still thinks you work here.',
+        what: 'Nobody ever told EPFO the day you left. As far as their records go you still work here, and they will not hand over your savings while you are employed. Your old company has to enter that date.',
       });
   }
 
   if (c.facts.blockingMismatches > 0)
     mistakes.push({
       where: 'Across your records',
-      what: `${c.facts.blockingMismatches} of your details (name, date of birth or parent name) disagree between Aadhaar, PAN, bank and EPFO.`,
+      what: `Your name, date of birth or parent's name is written differently on ${c.facts.blockingMismatches === 1 ? 'one of your records' : 'some of your records'}. EPFO matches these letter by letter, so even one spelling difference sends the claim back. ${c.facts.blockingMismatches === 1 ? 'One detail does' : `${c.facts.blockingMismatches} details do`} not match today.`,
     });
 
   return {
-    fromEmployer: oldest?.name ?? '—',
-    toEmployer: current?.name ?? '—',
+    fromEmployer: oldest?.name ?? '-',
+    toEmployer: current?.name ?? '-',
     employerCount: rows.length,
     totalService: c.facts.totalEpsServiceMonths,
     mistakes,
@@ -162,8 +207,8 @@ export function recordHealth(c: CaseView): FieldRow[] {
   return fields.map(([label, key]) => {
     const raw = SOURCES.map((src) => ({
       source: SOURCE_LABEL[src],
-      value: String((c.documents[src]?.[key] as string) ?? '—'),
-    })).filter((v) => v.value !== '—');
+      value: String((c.documents[src]?.[key] as string) ?? '-'),
+    })).filter((v) => v.value !== '-');
 
     // Aadhaar is EPFO's source of truth, so it is the reference every other
     // record has to match.
@@ -189,7 +234,7 @@ export function recordHealth(c: CaseView): FieldRow[] {
 
 export interface MoneySummary {
   balance: number;
-  /** rough monthly contribution, balance spread over service — an illustration */
+  /** rough monthly contribution, balance spread over service - an illustration */
   monthlyEstimate: number;
   epfShareNote: string;
 }
@@ -249,48 +294,48 @@ export function alerts(c: CaseView): Alert[] {
   if (f.blockingMismatches > 0)
     out.push({
       severity: 'blocking',
-      title: 'Your records disagree with each other',
-      detail: `${f.blockingMismatches} field${f.blockingMismatches === 1 ? '' : 's'} differ across Aadhaar, PAN, bank and EPFO. Any claim will be rejected until they match.`,
+      title: 'Your name or details are written differently in different places',
+      detail: `${f.blockingMismatches === 1 ? 'One detail is' : `${f.blockingMismatches} details are`} written differently across your Aadhaar, PAN, bank account and EPFO record. A computer compares them letter by letter, so the claim will keep coming back until all four say exactly the same thing.`,
       gateId: 'records_agree',
     });
 
   if (f.distinctUanCount > 1)
     out.push({
       severity: 'blocking',
-      title: 'You have more than one UAN',
-      detail: 'Your service is split across two UANs, which shortens your pension record. They must be merged.',
+      title: 'Your savings are split across two accounts',
+      detail: 'At some point a second PF account was opened for you instead of using your first one. EPFO counts each separately, so you are credited with fewer years than you actually worked. The two have to be joined into one.',
       gateId: 'service_history',
     });
 
   if (!f.exitMarked && !f.stillEmployed)
     out.push({
       severity: 'warning',
-      title: 'No exit date on your last job',
-      detail: 'Until your last working day is recorded, EPFO treats you as still employed and will not release a withdrawal.',
+      title: 'EPFO still thinks you are working',
+      detail: 'Nobody entered the day you left your last job. EPFO does not give savings to someone who is still employed, so this has to be recorded before anything else can happen.',
       gateId: 'exit_marked',
     });
 
   if (f.serviceGapMonths > 0)
     out.push({
       severity: 'warning',
-      title: `A ${monthsToYM(f.serviceGapMonths)} gap in your contributions`,
-      detail: 'A break with no employer against it reduces your pensionable service. Worth confirming it is genuine.',
+      title: `${monthsInWords(f.serviceGapMonths)} where nothing went into your PF`,
+      detail: `For ${f.serviceGapMonths === 1 ? 'that month' : 'those months'} no money went into your PF and no employer is named. ${f.serviceGapMonths === 1 ? 'It does' : 'They do'} not count towards your pension. Worth checking whether you were genuinely between jobs, or an employer stopped paying without telling you.`,
       gateId: 'service_history',
     });
 
   if (!f.uanActive)
     out.push({
       severity: 'blocking',
-      title: 'Your UAN is not activated',
-      detail: 'Nothing online works until you activate it through UMANG. This blocks everything else.',
+      title: 'Your PF account has not been switched on yet',
+      detail: 'Your PF number exists but has never been activated, so nothing online will open for you. You do this yourself on the UMANG app using your face and your Aadhaar. Everything else waits on this one.',
       gateId: 'uan_active',
     });
 
   if (!f.eNominationFiled)
     out.push({
       severity: 'warning',
-      title: 'No e-Nomination on file',
-      detail: 'The claim page will not even open without one. It takes a day and is easy to miss.',
+      title: 'You have not said who should receive this money',
+      detail: 'EPFO asks everyone to name the family member who should get their savings if something happens to them. Until you do, the claim page will not open at all. It takes about a day and is easy to miss.',
       gateId: 'e_nomination',
     });
 
@@ -298,15 +343,52 @@ export function alerts(c: CaseView): Alert[] {
   if (!p.crossedTenYears && p.monthsToTenYears <= 12 && p.monthsToTenYears > 0)
     out.push({
       severity: 'info',
-      title: `You are ${monthsToYM(p.monthsToTenYears)} from 10 years of service`,
-      detail: 'At ten years your pension stops being a withdrawable lump sum and becomes a monthly pension at 58. Worth deciding before you cross it.',
+      title: `You are ${monthsInWords(p.monthsToTenYears)} away from 10 years of service`,
+      detail: 'Before ten years of service you can take your pension money out as one payment. After ten years you cannot, and instead you receive a monthly pension once you turn 58. Neither is wrong, but it is worth choosing on purpose rather than by accident.',
     });
+
+  /**
+   * Everything above is hand-written, which is why it reads well - and why it
+   * used to be incomplete. There was no alert for the claim form or the 15G
+   * attachment, so a member whose only remaining blocker was one of those saw
+   * "1 still blocking" on the pre-flight badge and an empty Needs-your-attention
+   * list underneath it. Two sources of truth, disagreeing on screen.
+   *
+   * The gates are the source of truth. Anything still in the way that the copy
+   * above did not already cover gets an alert generated from the gate itself, so
+   * the list cannot be missing something the countdown is counting.
+   */
+  const covered = new Set(out.map((a) => a.gateId).filter(Boolean));
+  for (const g of c.resolution.gates) {
+    if (g.status !== 'red' && g.status !== 'blocked') continue;
+    if (covered.has(g.id)) continue;
+    out.push({
+      severity: g.status === 'red' ? 'blocking' : 'warning',
+      title: g.problem,
+      detail:
+        g.status === 'blocked'
+          ? `${g.blocks} You cannot start this one until the steps it depends on are cleared.`
+          : g.blocks,
+      gateId: g.id,
+    });
+  }
+
+  // most costly first, so the thing worth doing today is at the top
+  const RANK = { blocking: 0, warning: 1, info: 2, good: 3 } as const;
+  out.sort((a, b) => {
+    const bySeverity = RANK[a.severity] - RANK[b.severity];
+    if (bySeverity !== 0) return bySeverity;
+    // within a severity, whatever is actually on the critical path comes first
+    const crit = (x: Alert) =>
+      x.gateId && c.resolution.gates.find((g) => g.id === x.gateId)?.onCriticalPath ? 0 : 1;
+    return crit(a) - crit(b);
+  });
 
   if (out.length === 0)
     out.push({
       severity: 'good',
       title: 'Nothing needs your attention',
-      detail: 'Your records line up, your service is clean, and you are ready to file.',
+      detail: 'Everything matches, your work history is complete, and there is nothing stopping you from asking for your money.',
     });
 
   return out;
@@ -339,7 +421,7 @@ export interface ContributionTimeline {
 /**
  * A month-by-month build-up of the balance. The total balance is spread evenly
  * across the months you actually contributed (gaps add nothing), so the curve
- * climbs while you were employed and flattens when you were not — a faithful
+ * climbs while you were employed and flattens when you were not - a faithful
  * shape even though EPFO does not publish a real per-month figure.
  */
 export function contributionTimeline(c: CaseView): ContributionTimeline {

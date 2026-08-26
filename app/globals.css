@@ -2,12 +2,12 @@
 
 /*
  * Colour is anchored on the EPFO member portal's own teal (#055160), so the page
- * feels like the right place — built out into a real scale, because the portal
+ * feels like the right place - built out into a real scale, because the portal
  * uses teal almost entirely as text colour, which is why it reads flat.
  *
  * Structure borrows from the US Web Design System: small radii, an 8px spacing
  * rhythm, heavy type, high-contrast focus, and a left accent bar to carry status.
- * We take the craft, not the identity — no federal banner, seal or flag, because
+ * We take the craft, not the identity - no federal banner, seal or flag, because
  * this is not a government service and must never look like one.
  *
  * Signal orange appears in two places only: the countdown, and the critical path.
@@ -172,6 +172,28 @@ h1, h2, h3, .font-display {
   .rise-5 { animation-delay: 300ms; }
 
   /* a timeline connector that draws itself downward */
+  /**
+   * Sections lift in as you reach them. Driven by the scroll position itself
+   * rather than JavaScript, so there is no observer, no hydration cost and no
+   * flash of content that a script has not caught up with yet.
+   *
+   * Guarded twice on purpose: a browser without scroll-driven animations, or a
+   * reader who has asked for less motion, simply gets the content sitting still.
+   * Nothing is ever hidden by a rule that might not be undone.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .reveal {
+        animation: rise 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation-timeline: view();
+        animation-range: entry 4% cover 20%;
+      }
+      .reveal-2 {
+        animation-range: entry 4% cover 26%;
+      }
+    }
+  }
+
   @keyframes draw-line { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   .draw-line { transform-origin: top; animation: draw-line 700ms ease-out both; }
 

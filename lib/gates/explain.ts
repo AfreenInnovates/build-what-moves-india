@@ -20,62 +20,69 @@ export interface Check {
 const FIELD: Partial<Record<FactKey, { name: string; show: (f: CaseFacts) => string }>> = {
   uanActive: { name: 'Your UAN is activated', show: (f) => (f.uanActive ? 'Activated' : 'Not activated') },
   aadhaarLinked: {
-    name: 'Aadhaar is linked and verified',
+    name: 'Your Aadhaar is linked and checked',
     show: (f) => (f.aadhaarLinked ? 'Linked' : 'Not linked'),
   },
   eNominationFiled: {
-    name: 'An e-Nomination is on file',
+    name: 'You have named who should receive this money',
     show: (f) => (f.eNominationFiled ? 'Filed' : 'Not filed'),
   },
   exitMarked: {
-    name: 'Your date of exit is recorded',
+    name: 'Your last working day is on record',
     show: (f) => (f.exitMarked ? 'Recorded' : 'Missing'),
   },
   stillEmployed: {
-    name: 'You have left that employer',
+    name: 'You have left that job',
     show: (f) => (f.stillEmployed ? 'Still employed there' : 'Left'),
   },
   blockingMismatches: {
-    name: 'Aadhaar, PAN, bank and EPFO agree',
+    name: 'Your details match on Aadhaar, PAN, bank and EPFO',
     show: (f) =>
       f.blockingMismatches === 0
-        ? 'All four agree'
-        : `${f.blockingMismatches} field${f.blockingMismatches === 1 ? '' : 's'} disagree`,
+        ? 'All four match'
+        : f.blockingMismatches === 1
+          ? '1 field does not match'
+          : `${f.blockingMismatches} fields do not match`,
   },
   distinctUanCount: {
-    name: 'You have a single UAN',
+    name: 'You have only one UAN number',
     show: (f) => (f.distinctUanCount > 1 ? `${f.distinctUanCount} UANs found` : 'One UAN'),
   },
   serviceGapMonths: {
-    name: 'No unexplained break in service',
-    show: (f) => (f.serviceGapMonths > 0 ? `${f.serviceGapMonths} months unaccounted` : 'Continuous'),
+    name: 'No gaps in your work record that nobody can explain',
+    show: (f) =>
+      f.serviceGapMonths === 0
+        ? 'No gaps'
+        : f.serviceGapMonths === 1
+          ? '1 month missing'
+          : `${f.serviceGapMonths} months missing`,
   },
   continuousServiceMonths: {
-    name: 'Continuous service with this employer',
+    name: 'Time worked without a break at this job',
     show: (f) => `${f.continuousServiceMonths} months`,
   },
   totalEpsServiceMonths: {
-    name: 'Total pensionable service',
+    name: 'Total years that count towards your pension',
     show: (f) => `${f.totalEpsServiceMonths} months`,
   },
   balanceRupees: {
-    name: 'Amount being claimed',
+    name: 'How much you are claiming',
     show: (f) => `Rs ${f.balanceRupees.toLocaleString('en-IN')}`,
   },
   formSelected: {
-    name: 'A claim form has been chosen',
+    name: 'You have picked which claim form to use',
     show: (f) => (f.formSelected ? 'Chosen' : 'Not chosen yet'),
   },
   form15gAttached: {
-    name: 'Form 15G is attached',
+    name: 'Form 15G attached, so tax is not cut',
     show: (f) => (f.form15gAttached ? 'Attached' : 'Not attached'),
   },
   employerResponsive: {
-    name: 'Your employer responds',
+    name: 'Your company replies when contacted',
     show: (f) => (f.employerResponsive ? 'Reachable' : 'Not responding'),
   },
   errorFromClosedEmployer: {
-    name: 'The error came from a closed employer',
+    name: 'The mistake came from a company that has shut down',
     show: (f) => (f.errorFromClosedEmployer ? 'Yes' : 'No'),
   },
 };

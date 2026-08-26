@@ -1,7 +1,7 @@
 /**
  * The gate spec is DATA, not code. Every predicate below is JSON-serialisable,
  * which is what makes the claim "adding a gate is a config change, not a release"
- * literally true — a spec can be stored in the `gate_specs` table, published by a
+ * literally true - a spec can be stored in the `gate_specs` table, published by a
  * field office, and loaded at runtime without deploying anything.
  */
 
@@ -13,14 +13,14 @@ export interface CaseFacts {
   exitMarked: boolean;
   stillEmployed: boolean;
 
-  /** from the deterministic matcher — never from a model */
+  /** from the deterministic matcher - never from a model */
   blockingMismatches: number;
 
   distinctUanCount: number;
   serviceGapMonths: number;
-  /** unbroken service with the employer being claimed against — drives Form 15G */
+  /** unbroken service with the employer being claimed against - drives Form 15G */
   continuousServiceMonths: number;
-  /** every pensionable month across the whole record — drives EPS eligibility */
+  /** every pensionable month across the whole record - drives EPS eligibility */
   totalEpsServiceMonths: number;
   balanceRupees: number;
 
@@ -69,8 +69,8 @@ export type FixKind =
 /**
  * Where a number came from and when it was last checked.
  *
- * EPFO policy moves — the auto-settlement limit and the DigiLocker Joint
- * Declaration route both changed recently — so an unattributed latency is a
+ * EPFO policy moves - the auto-settlement limit and the DigiLocker Joint
+ * Declaration route both changed recently - so an unattributed latency is a
  * liability. Carrying provenance on every figure means the spec can be audited,
  * and a stale entry is visible rather than silently wrong.
  */
@@ -101,6 +101,15 @@ export interface ConditionalRoute {
 export interface Gate {
   id: GateId;
   title: string;
+  /**
+   * The same gate said as a problem rather than a finished state.
+   *
+   * "Your tax form is attached" is the right label for a checklist, where a tick
+   * or a cross supplies the polarity. It is the wrong headline for an alert,
+   * where it appeared under a "Needs attention" badge and read as its own
+   * contradiction. Alerts use this instead.
+   */
+  problem: string;
   /** one line naming what stays locked while this is red */
   blocks: string;
   /** green when this holds */
@@ -128,6 +137,7 @@ export type GateStatus =
 export interface ResolvedGate {
   id: GateId;
   title: string;
+  problem: string;
   blocks: string;
   status: GateStatus;
   order: number;
@@ -137,7 +147,7 @@ export interface ResolvedGate {
   actor: Actor | null;
   latencyDays: number;
   provenance: Provenance | null;
-  /** true when this gate sits on the critical path — i.e. fixing it moves the number */
+  /** true when this gate sits on the critical path - i.e. fixing it moves the number */
   onCriticalPath: boolean;
 }
 

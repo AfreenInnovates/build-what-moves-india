@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tag } from './ui';
 import { Icon } from './Icon';
-import { inr } from '@/lib/insights';
 
 export interface PickerCard {
   id: string;
@@ -23,7 +22,13 @@ export interface PickerCard {
  * dashboard, so judges can see the login flow. The grid locks on the first click
  * so a second card cannot queue behind it.
  */
-export function CasePicker({ cards }: { cards: PickerCard[] }) {
+export function CasePicker({
+  cards,
+  fresh,
+}: {
+  cards: PickerCard[];
+  fresh?: React.ReactNode;
+}) {
   const router = useRouter();
   const [openingSlug, setOpeningSlug] = useState<string | null>(null);
   const busy = openingSlug !== null;
@@ -82,6 +87,9 @@ export function CasePicker({ cards }: { cards: PickerCard[] }) {
           </button>
         );
       })}
+
+      {/* a peer choice, not a footnote: setting up your own sits with the six */}
+      {fresh}
     </div>
   );
 }

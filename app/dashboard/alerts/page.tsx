@@ -19,7 +19,7 @@ export default async function AlertsPage() {
       <PageHead
         icon="alerts"
         title="Alerts"
-        lead="Everything that needs a decision or an action — contribution gaps, missing exit records, mismatches, thresholds you are near. Most weigh nothing until you try to withdraw, which is exactly when it is too late to be surprised."
+        lead="Everything waiting on a decision from you: months with no money paid in, a leaving date nobody recorded, details that do not match, and lines you are close to crossing. Most of these cost you nothing until the day you ask for your money, which is the worst possible moment to find out."
       />
       <div className="mt-6 max-w-[820px] space-y-3">
         {sorted.map((a, i) => (

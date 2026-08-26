@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Icon } from '@/components/Icon';
 import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
 import { PageHead } from '@/components/panels';
@@ -19,7 +20,7 @@ export default async function RecordsPage() {
       <PageHead
         icon="records"
         title="Record Health"
-        lead="Your name, date of birth and parent's name, side by side across all four records. EPFO treats Aadhaar as the truth — everything else has to match it exactly, or a claim is rejected."
+        lead="Your name, date of birth and parent's name, side by side across all four records. EPFO treats Aadhaar as the truth - everything else has to match it exactly, or a claim is rejected."
       />
 
       <div className="mt-6 max-w-[900px]">
@@ -100,12 +101,12 @@ export default async function RecordsPage() {
             href="/dashboard/fix/records_agree"
             className="mt-6 inline-flex items-center rounded-sm bg-teal-700 px-6 py-3 text-[15px] font-bold text-white transition hover:bg-teal-600"
           >
-            How to fix this →
+            How to fix this <Icon name="arrow" size={17} aria-hidden />
           </Link>
         )}
 
         <p className="mt-6 text-[13px] leading-relaxed text-ink-500">
-          Matching is rule-based, never a language model — a hallucinated match would cost someone
+          Matching is rule-based, never a language model - a hallucinated match would cost someone
           their claim.
         </p>
       </div>

@@ -1,39 +1,40 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { chunkForSpeech, recordWav, type WavRecorder } from './audio';
+import { LANGUAGE_NATIVE } from '@/lib/language';
 
-interface GateInfo {
-  id: string;
-  title: string;
-  status: string;
-  blocks: string;
-  actor: string | null;
-  latencyDays: number;
-  routeLabel: string | null;
-  onCriticalPath: boolean;
-}
 
 interface Msg {
   role: 'user' | 'assistant';
   content: string;
 }
 
-type TourStep = { gateId: string; say: string };
+/**
+ * A stop on the tour. It carries the page it lives on and what to ring once
+ * that page is up, so the tour can walk across the whole site rather than
+ * pointing at whatever happens to be on screen.
+ */
+type TourStep = {
+  target: string;
+  say: string;
+  href: string;
+  selector: string;
+  label: string | null;
+};
 
 const SUGGESTIONS = [
-  'Show me what each gate means',
+  'Walk me through the whole thing',
   'What should I do first?',
   'Why is my claim stuck?',
-  'What documents do I need?',
+  'मेरा दावा क्यों अटका है?',
 ];
 
 export function Assistant({
   member,
-  gates,
 }: {
   member: { name: string; uan: string; employer: string; totalDays: number };
-  gates: GateInfo[];
 }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -45,6 +46,14 @@ export function Assistant({
   const [speaking, setSpeaking] = useState(false);
   const [muted, setMuted] = useState(false);
   const [refining, setRefining] = useState(false);
+
+  // Whatever language they last used. Sarvam has to be told which language to
+  // speak, and getting it wrong is worse than silence - English phonemes
+  // reading Devanagari is not something anybody can listen to.
+  const langRef = useRef('en-IN');
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [tour, setTour] = useState<TourStep[] | null>(null);
   const [tourAt, setTourAt] = useState(0);
@@ -64,7 +73,10 @@ export function Assistant({
   const composed = (input + (interim ? (input ? ' ' : '') + interim : '')).trim();
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
   }, [msgs, busy]);
 
   // the conversation belongs to the case, so it survives a refresh
@@ -99,7 +111,7 @@ export function Assistant({
     const r = await fetch('/api/speak', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, language: langRef.current }),
       signal,
     });
     const j = await r.json();
@@ -137,6 +149,7 @@ export function Assistant({
           if (!b64) {
             if (i === 0 && typeof speechSynthesis !== 'undefined') {
               const u = new SpeechSynthesisUtterance(text);
+              u.lang = langRef.current;
               u.rate = 1.02;
               u.onend = () => setSpeaking(false);
               speechSynthesis.speak(u);
@@ -176,7 +189,7 @@ export function Assistant({
 
   /**
    * Sarvam gets the last word, literally. The browser engine drives the live
-   * display because Sarvam's API only answers once you stop talking — but the
+   * display because Sarvam's API only answers once you stop talking - but the
    * browser is poor at Indian names and code-mixed speech, so what finally lands
    * in the box is Sarvam's transcript whenever it returns one.
    */
@@ -190,6 +203,9 @@ export function Assistant({
       const r = await fetch('/api/listen', { method: 'POST', body: fd });
       const j = await r.json();
       if (j.transcript?.trim()) setInput(j.transcript.trim());
+      // Sarvam tells us which language it just heard, which is a far better
+      // signal than guessing from the text after the fact
+      if (/^[a-z]{2}-[A-Z]{2}$/.test(j.language ?? '')) langRef.current = j.language;
     } catch {
       /* keep whatever the browser heard */
     } finally {
@@ -213,18 +229,24 @@ export function Assistant({
       onend: (() => void) | null;
       onerror: (() => void) | null;
     };
-    const w = window as unknown as { SpeechRecognition?: SR; webkitSpeechRecognition?: SR };
+    const w = window as unknown as {
+      SpeechRecognition?: SR;
+      webkitSpeechRecognition?: SR;
+    };
     const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
     if (!Ctor) {
       setMsgs((m) => [
         ...m,
-        { role: 'assistant', content: 'Your browser will not let me listen. Chrome or Edge will.' },
+        {
+          role: 'assistant',
+          content: 'Your browser will not let me listen. Chrome or Edge will.',
+        },
       ]);
       return;
     }
 
     const rec = new Ctor();
-    rec.lang = 'en-IN';
+    rec.lang = langRef.current;
     rec.continuous = true;
     rec.interimResults = true;
 
@@ -293,6 +315,8 @@ export function Assistant({
           signal: controller.signal,
         });
         const j = await r.json();
+        if (typeof j.lang === 'string' && /^[a-z]{2}-[A-Z]{2}$/.test(j.lang))
+          langRef.current = j.lang;
         setMsgs((m) => [...m, { role: 'assistant', content: j.reply }]);
         if (j.tour?.length) {
           setTour(j.tour);
@@ -305,7 +329,10 @@ export function Assistant({
         if ((e as Error).name !== 'AbortError') {
           setMsgs((m) => [
             ...m,
-            { role: 'assistant', content: 'Something went wrong reaching me. Try again?' },
+            {
+              role: 'assistant',
+              content: 'Something went wrong reaching me. Try again?',
+            },
           ]);
         }
       } finally {
@@ -317,15 +344,21 @@ export function Assistant({
   );
 
   // --------------------------------------------------------------------- tour
+  /**
+   * Each step may live on a different page, so the tour drives the router. The
+   * ring is drawn by the overlay once the element it wants actually exists -
+   * navigation is not instant and the old code pointed at nothing when a step
+   * crossed a page boundary.
+   */
   useEffect(() => {
     if (!tour) return;
     const step = tour[tourAt];
     if (!step) return;
-    document
-      .querySelector(`[data-gate="${step.gateId}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (step.href && window.location.pathname !== step.href) router.push(step.href);
+    // deliberately keyed on the step alone: re-running when the new page
+    // arrives would start the narration over a second time
     speak(step.say);
-  }, [tour, tourAt, speak]);
+  }, [tour, tourAt, speak, router]);
 
   const endTour = useCallback(() => {
     setTour(null);
@@ -340,7 +373,7 @@ export function Assistant({
           step={tour[tourAt]}
           index={tourAt}
           total={tour.length}
-          gate={gates.find((g) => g.id === tour[tourAt]?.gateId)}
+          here={pathname}
           speaking={speaking}
           onHush={stopSpeech}
           onNext={() => (tourAt + 1 < tour.length ? setTourAt(tourAt + 1) : endTour())}
@@ -386,7 +419,7 @@ export function Assistant({
                   stopSpeech();
                 }}
                 aria-pressed={!muted}
-                title={muted ? 'Voice is off — turn it on' : 'Voice is on — turn it off'}
+                title={muted ? 'Voice is off - turn it on' : 'Voice is on - turn it off'}
                 className={`flex min-h-[34px] items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold transition ${
                   muted
                     ? 'bg-ink-100 text-ink-700 hover:bg-ink-300/60'
@@ -402,11 +435,26 @@ export function Assistant({
                     strokeLinejoin="round"
                   />
                   {muted ? (
-                    <path d="M14 7.5l4 5M18 7.5l-4 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path
+                      d="M14 7.5l4 5M18 7.5l-4 5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
                   ) : (
                     <>
-                      <path d="M13.8 7.2a4 4 0 0 1 0 5.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                      <path d="M16.1 5.2a7 7 0 0 1 0 9.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                      <path
+                        d="M13.8 7.2a4 4 0 0 1 0 5.6"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M16.1 5.2a7 7 0 0 1 0 9.6"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                      />
                     </>
                   )}
                 </svg>
@@ -430,9 +478,25 @@ export function Assistant({
               <div>
                 <p className="text-[15px] leading-relaxed text-ink-700">
                   Hello {firstName}. Your money is{' '}
-                  <span className="font-semibold text-ink-900">{member.totalDays} working days</span>{' '}
-                  away. Ask me anything about what is holding it up.
+                  <span className="font-semibold text-ink-900">
+                    {member.totalDays} working days
+                  </span>{' '}
+                  away. Ask me anything about what is holding it up - by typing, or by tapping
+                  the mic and just saying it.
                 </p>
+
+                <div className="mt-4 rounded-md border border-ink-100 bg-ink-50 px-3.5 py-3">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.07em] text-ink-500">
+                    Ask in your own language
+                  </p>
+                  <p className="mt-2 text-[14px] leading-relaxed text-ink-700">
+                    {Object.values(LANGUAGE_NATIVE).join(' · ')}
+                  </p>
+                  <p className="mt-2 text-[13px] leading-relaxed text-ink-500">
+                    Speak or type in any of these and I answer in the same one. Switch whenever you
+                    like - the language of your last message is the one I follow.
+                  </p>
+                </div>
                 <div className="mt-4 space-y-2">
                   {SUGGESTIONS.map((s) => (
                     <button
@@ -505,7 +569,7 @@ export function Assistant({
                     ask(composed);
                   }
                 }}
-                placeholder={listening ? 'Listening — start speaking' : 'Ask about your claim'}
+                placeholder={listening ? 'Listening - start speaking' : 'Ask about your claim'}
                 className={`min-w-0 flex-1 resize-none rounded-sm border px-3 py-2.5 text-[15px] leading-snug outline-none focus:border-teal-700 ${
                   listening ? 'border-signal bg-signal-soft' : 'border-ink-100'
                 }`}
@@ -531,6 +595,12 @@ export function Assistant({
                 </button>
               )}
             </div>
+
+            {!listening && !refining && (
+              <p className="mt-1.5 pl-12 text-[11.5px] leading-snug text-ink-400">
+                Type or speak, in any of {Object.keys(LANGUAGE_NATIVE).length} languages
+              </p>
+            )}
 
             {refining && !listening && (
               <p className="mt-1.5 pl-12 text-[11.5px] font-semibold text-teal-700">
@@ -559,7 +629,7 @@ function TourOverlay({
   step,
   index,
   total,
-  gate,
+  here,
   speaking,
   onHush,
   onNext,
@@ -569,30 +639,69 @@ function TourOverlay({
   step?: TourStep;
   index: number;
   total: number;
-  gate?: GateInfo;
+  here: string;
   speaking: boolean;
   onHush: () => void;
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
 }) {
-  const [box, setBox] = useState<DOMRect | null>(null);
+  /**
+   * The ring is stored with the step it belongs to. Keying it that way means a
+   * stale ring from the previous page simply stops being rendered when the step
+   * changes, instead of having to be cleared - and clearing it would mean
+   * setting state from inside the effect that draws it.
+   */
+  const [ring, setRing] = useState<{ key: string; box: DOMRect } | null>(null);
+  const key = step ? `${index}:${step.target}` : '';
 
+  /**
+   * Poll for the element rather than waiting a fixed moment. A step on another
+   * page is not there when the step changes; it arrives when the route does,
+   * which might be 80ms or might be a second on a route being reached for the
+   * first time.
+   */
   useEffect(() => {
     if (!step) return;
-    const find = () => {
-      const el = document.querySelector(`[data-gate="${step.gateId}"]`);
-      setBox(el ? el.getBoundingClientRect() : null);
+
+    const el = () =>
+      document.querySelector(step.selector) ??
+      document.querySelector(`[data-gate="${step.target}"]`);
+
+    const measure = () => {
+      const found = el();
+      if (!found) return false;
+      const box = found.getBoundingClientRect();
+      if (box.width === 0 && box.height === 0) return false;
+      setRing({ key, box });
+      return true;
     };
-    const t = setTimeout(find, 420);
-    window.addEventListener('scroll', find, { passive: true });
-    window.addEventListener('resize', find);
+
+    let settled = false;
+    const attempt = () => {
+      if (settled) return;
+      if (!measure()) return;
+      settled = true;
+      el()?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    attempt();
+
+    const poll = window.setInterval(attempt, 120);
+    // give up quietly after three seconds; the bubble still reads fine alone
+    const giveUp = window.setTimeout(() => window.clearInterval(poll), 3000);
+
+    const track = () => settled && measure();
+    window.addEventListener('scroll', track, { passive: true });
+    window.addEventListener('resize', track);
     return () => {
-      clearTimeout(t);
-      window.removeEventListener('scroll', find);
-      window.removeEventListener('resize', find);
+      window.clearInterval(poll);
+      window.clearTimeout(giveUp);
+      window.removeEventListener('scroll', track);
+      window.removeEventListener('resize', track);
     };
-  }, [step]);
+  }, [step, key, here]);
+
+  const box = ring?.key === key ? ring.box : null;
 
   if (!step) return null;
 
@@ -616,7 +725,7 @@ function TourOverlay({
           <Orb pulsing={speaking} />
           <div className="min-w-0 flex-1">
             <p className="tabular text-[12px] font-bold uppercase tracking-[0.08em] text-signal">
-              {index + 1} of {total} · {gate?.title ?? step.gateId}
+              {index + 1} of {total} · {step.label ?? step.target}
             </p>
             <p className="mt-1.5 text-[15px] leading-relaxed text-ink-800">{step.say}</p>
           </div>

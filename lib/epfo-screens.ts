@@ -4,7 +4,7 @@ import type { GateId } from './gates/types';
  * The actual EPFO screens, field for field, as a member meets them today.
  *
  * These are reproduced so anyone who has used the portal recognises exactly
- * where they are — and so every place we substitute something is labelled
+ * where they are - and so every place we substitute something is labelled
  * rather than glossed over. `note` on a field is the honest answer to "what
  * really happens here".
  */
@@ -56,7 +56,7 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     screenTitle: 'KYC',
     breadcrumb: 'Member portal → Manage → KYC',
     intro:
-      'You tick one document at a time and type the details in by hand. There is no comparison against anything — the portal will happily accept a name that does not match your Aadhaar, and tell you twenty days later.',
+      'You tick one document at a time and type the details in by hand. There is no comparison against anything - the portal will happily accept a name that does not match your Aadhaar, and tell you twenty days later.',
     fields: [
       {
         label: 'Document type',
@@ -72,14 +72,14 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     submit: 'Save',
     afterSubmit: 'The entry moves to a list headed "KYC Pending for Approval".',
     afterWait:
-      'It now sits with your employer, not with EPFO. Typically 7 to 10 days if they act. If the data is already wrong in EPFO\'s database, this route cannot fix it at all — that needs a Joint Declaration, which an Aadhaar-verified member can now file themselves through DigiLocker without the employer.',
+      'It now sits with your employer, not with EPFO. Typically 7 to 10 days if they act. If the data is already wrong in EPFO\'s database, this route cannot fix it at all - that needs a Joint Declaration, which an Aadhaar-verified member can now file themselves through DigiLocker without the employer.',
   },
 
   e_nomination: {
     screenTitle: 'e-Nomination',
     breadcrumb: 'Member portal → Manage → e-Nomination',
     intro:
-      'Genuinely one of the better screens on the portal. The problem is not this form — it is that nothing anywhere tells you the claim page will not open until you have filled it.',
+      'Genuinely one of the better screens on the portal. The problem is not this form - it is that nothing anywhere tells you the claim page will not open until you have filled it.',
     fields: [
       { label: 'Do you have a family?', kind: 'radio', options: ['Yes', 'No'], required: true, note: 'Answering No sends you down a different path entirely, for nominating someone outside your family.' },
       { label: 'Nominee Aadhaar number', kind: 'text', placeholder: 'XXXX XXXX XXXX', required: true, note: 'Real: verified against UIDAI, and the nominee name is pulled from there. Here: nothing is verified.' },
@@ -93,7 +93,7 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     ],
     submit: 'Save family details and e-Sign',
     afterSubmit: 'The nomination is recorded immediately and the claim page unlocks.',
-    afterWait: 'No waiting. This one is genuinely instant — which is exactly why discovering it late is so wasteful.',
+    afterWait: 'No waiting. This one is genuinely instant - which is exactly why discovering it late is so wasteful.',
   },
 
   exit_marked: {
@@ -110,7 +110,7 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     submit: 'Update',
     afterSubmit: 'The exit date is written to your service history and cannot be edited afterwards.',
     afterWait:
-      'Instant if you are eligible to do it yourself. If it has been under two months, only your previous employer can — and there is no button here that tells them.',
+      'Instant if you are eligible to do it yourself. If it has been under two months, only your previous employer can - and there is no button here that tells them.',
   },
 
   service_history: {
@@ -121,7 +121,7 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     fields: [
       { label: 'Present employer details', kind: 'readonly', prefill: 'employer' },
       { label: 'Attestation through', kind: 'radio', options: ['Present employer', 'Previous employer'], required: true, note: 'Whichever you choose then has to approve it on a portal you cannot see. If you pick one that will not respond, the request simply sits there.' },
-      { label: 'Member ID / UAN to transfer from', kind: 'select', options: ['Select previous account'], required: true, note: 'Requires your identity to match across both accounts. If the mismatch is what caused the second UAN, this step fails — which is the circularity at the heart of the problem.' },
+      { label: 'Member ID / UAN to transfer from', kind: 'select', options: ['Select previous account'], required: true, note: 'Requires your identity to match across both accounts. If the mismatch is what caused the second UAN, this step fails - which is the circularity at the heart of the problem.' },
       { label: 'Get OTP', kind: 'otp', note: 'Real: OTP to your UAN-registered mobile. Here: no OTP is sent.' },
     ],
     submit: 'Submit transfer request',
@@ -164,10 +164,10 @@ export const EPFO_SCREENS: Record<GateId, EpfoScreen> = {
     screenTitle: 'Form 15G upload',
     breadcrumb: 'Member portal → Online Services → Claim → Upload',
     intro:
-      'Whether you need this at all depends on your continuous service and the amount — and the portal does not tell you until you are already mid-claim.',
+      'Whether you need this at all depends on your continuous service and the amount - and the portal does not tell you until you are already mid-claim.',
     fields: [
       { label: 'Form 15G / 15H', kind: 'file', required: true, note: 'Real: PDF only, strictly under 2 MB. Larger files fail with a generic error. Here: nothing is uploaded.' },
-      { label: 'Total estimated income for the year (₹)', kind: 'text', note: 'This is what Form 15G actually declares — that your income is below the taxable limit, so no TDS should be deducted.' },
+      { label: 'Total estimated income for the year (₹)', kind: 'text', note: 'This is what Form 15G actually declares - that your income is below the taxable limit, so no TDS should be deducted.' },
       { label: 'I declare the above is true', kind: 'checkbox', required: true },
     ],
     submit: 'Attach and continue',

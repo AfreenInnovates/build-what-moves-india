@@ -16,12 +16,12 @@ const ROWS = [
 
 const SOURCES: [string, string][] = [
   [
-    'About one in four claims rejected — roughly 26% in FY 2023-24',
+    'About one in four claims rejected - roughly 26% in FY 2023-24',
     'Factly / Dataful analysis of EPFO claim data. Their five-year average is near 27%.',
   ],
   [
     'Final-settlement rejections rose from about 13% to about 34%',
-    'Reporting on EPFO data covering FY 2017-18 to FY 2022-23. A narrower measure than the figure above, which is why the two differ — we quote the lower, broader one.',
+    'Reporting on EPFO data covering FY 2017-18 to FY 2022-23. A narrower measure than the figure above, which is why the two differ - we quote the lower, broader one.',
   ],
   [
     'A clean, fully KYC-linked claim settles in about three working days',
@@ -82,7 +82,7 @@ export default function WhatsMocked() {
         </p>
         <p className="mt-2 text-[14px] leading-relaxed text-ink-900">
           If you try this with your own files, they are sent to a third-party OCR service to be read.
-          They are not stored, but they do leave this machine. Use the synthetic samples instead —
+          They are not stored, but they do leave this machine. Use the synthetic samples instead -
           they demonstrate exactly the same thing.
         </p>
       </section>
@@ -111,7 +111,7 @@ export default function WhatsMocked() {
             EPFO points to 5.08 crore claims settled in FY 2024-25, an auto-settlement route that
             now covers claims up to Rs 5 lakh and clears fully KYC-linked cases in about three
             working days, and return rates it says are falling. That is the baseline this product
-            measures against — the case for building this is the gap between that clean path and
+            measures against - the case for building this is the gap between that clean path and
             what happens when one field disagrees, not a claim that EPFO is standing still.
           </p>
         </div>
@@ -136,7 +136,7 @@ export default function WhatsMocked() {
           Optical character recognition on Indic scripts is not reliable enough to trust silently. In
           our own testing, a vision model read a Kannada passbook name as a different surname
           entirely while reading the account number perfectly. That is why the document step asks you
-          to confirm what was read before anything is compared — a wrong extraction would produce a
+          to confirm what was read before anything is compared - a wrong extraction would produce a
           confident wrong answer, and the comparison logic cannot tell the difference.
         </p>
       </section>

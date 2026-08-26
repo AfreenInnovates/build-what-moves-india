@@ -21,6 +21,18 @@ await c.query(`
   )`);
 await c.query(`create index if not exists chat_case_idx on chat_messages(case_id, id)`);
 
+/**
+ * Postgres indexes the column a foreign key POINTS AT, never the column holding
+ * the key. Every lookup below walks a child table by its parent id, so without
+ * these each one is a sequential scan. At six demo members that is free; at any
+ * real number of members it is the first thing that falls over.
+ */
+await c.query(`create index if not exists cases_member_idx on cases(member_id, created_at desc)`);
+await c.query(`create index if not exists service_member_idx on service_history(member_id)`);
+await c.query(`create index if not exists documents_case_idx on documents(case_id)`);
+await c.query(`create index if not exists artifacts_case_idx on artifacts(case_id)`);
+await c.query(`create index if not exists comparisons_case_idx on field_comparisons(case_id)`);
+
 const r = await c.query('select slug, display_name, uan from members order by slug');
 console.table(r.rows);
 await c.end();

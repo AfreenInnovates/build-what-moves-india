@@ -1,23 +1,39 @@
 import Link from 'next/link';
 import { Icon } from './Icon';
 
-/** A short invitation to the full signup flow at /signup. */
+/**
+ * The seventh tile in the picker. Shaped like the six people beside it, because
+ * setting up your own case is a peer choice, not an afterthought below the grid.
+ */
 export function NewProfile() {
   return (
     <Link
       href="/signup"
-      className="card-hover flex items-center gap-4 rounded-xl border-2 border-dashed border-teal-200 bg-teal-50 p-5 transition hover:border-teal-700"
+      className="card-hover group flex h-full flex-col rounded-xl border-2 border-dashed border-teal-200 bg-teal-50/60 p-5 transition hover:border-teal-700 hover:bg-teal-50"
     >
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700">
-        <Icon name="people" size={24} aria-hidden />
-      </span>
-      <div className="flex-1">
-        <p className="text-[16px] font-bold text-teal-900">Set up a fresh profile</p>
-        <p className="mt-0.5 text-[13.5px] leading-relaxed text-teal-700">
-          Enter your own details and employer, then explore every section. For the demo only.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[17.5px] font-bold text-teal-900">Set up your own</p>
+          <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-1 text-[12.5px] font-semibold text-teal-700">
+            Takes a minute
+          </span>
+        </div>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700">
+          <Icon name="people" size={22} aria-hidden />
+        </span>
       </div>
-      <Icon name="route" size={20} className="shrink-0 text-teal-700" aria-hidden />
+
+      <p className="mt-3.5 flex-1 text-[14px] leading-relaxed text-teal-800">
+        Enter your own name and employer, then walk through every section with your case instead of
+        someone else&rsquo;s.
+      </p>
+
+      <div className="mt-4 flex items-center justify-between border-t border-teal-200 pt-3.5 text-[12.5px] text-teal-700">
+        <span>For the demo only</span>
+        <span className="inline-flex items-center gap-1 font-semibold">
+          Start <Icon name="route" size={13} aria-hidden />
+        </span>
+      </div>
     </Link>
   );
 }

@@ -2,7 +2,7 @@ import type { EpfoField, EpfoScreen as Screen } from '@/lib/epfo-screens';
 
 /**
  * A faithful reproduction of the real EPFO screen, deliberately styled to look
- * like the portal rather than like us — so anyone who has used it recognises
+ * like the portal rather than like us - so anyone who has used it recognises
  * where they are. Every control is inert, and every place we substitute
  * something carries the note saying so.
  */
@@ -56,7 +56,7 @@ export function EpfoScreenPreview({
         >
           {screen.submit}
         </button>
-        <p className="mt-1.5 text-[12px] text-ink-400">Disabled — this reproduction submits nothing.</p>
+        <p className="mt-1.5 text-[12px] text-ink-400">Disabled - this reproduction submits nothing.</p>
       </div>
 
       <div className="border-t-2 border-ink-100 bg-ink-50 px-4 py-4 sm:px-5">
@@ -145,7 +145,7 @@ function Field({
 
         {f.kind === 'readonly' && (
           <p className="rounded-xs bg-ink-50 px-3 py-2 text-[14px] text-ink-700">
-            {value ?? '—'}
+            {value ?? '-'}
           </p>
         )}
 

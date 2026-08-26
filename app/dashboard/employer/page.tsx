@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Icon } from '@/components/Icon';
 import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
 import { PageHead } from '@/components/panels';
@@ -27,7 +28,7 @@ export default async function EmployerPage() {
       <PageHead
         icon="employer"
         title="Employer Requests"
-        lead="Some fixes only your employer can make, on a portal you cannot see. Here are the messages, written and ready — naming the exact action so whoever reads it does not have to work out what you need."
+        lead="Some fixes only your employer can make, on a portal you cannot see. Here are the messages, written and ready - naming the exact action so whoever reads it does not have to work out what you need."
       />
       <div className="mt-6 max-w-[760px] space-y-5">
         {employerGates.length === 0 ? (
@@ -41,7 +42,7 @@ export default async function EmployerPage() {
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-[16px] font-bold text-ink-900">{g.title}</h2>
                 <Link href={`/dashboard/fix/${g.id}`} className="shrink-0 text-[13px] font-semibold text-teal-700 hover:underline">
-                  How this works →
+                  How this works <Icon name="arrow" size={14} aria-hidden />
                 </Link>
               </div>
               <p className="mt-1 text-[13.5px] text-ink-600">{g.blocks}</p>
@@ -49,7 +50,7 @@ export default async function EmployerPage() {
 {draftFor(g.title, ASKS[g.id] ?? 'Please action the pending correction on my PF account.')}
               </pre>
               <p className="mt-2 text-[12.5px] text-ink-500">
-                Copy this into WhatsApp or email to your HR contact. Nothing is sent for you — you
+                Copy this into WhatsApp or email to your HR contact. Nothing is sent for you - you
                 stay in control of who it goes to.
               </p>
             </section>

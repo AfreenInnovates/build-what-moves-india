@@ -85,10 +85,10 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
             }`}
           >
             {done
-              ? 'Cleared — here is exactly what was checked'
+              ? 'Done. Here is what we checked'
               : g.status === 'not_applicable'
-                ? 'Does not apply to you — here is why'
-                : 'What this gate checks, and where you stand'}
+                ? 'This one does not apply to you. Here is why'
+                : 'What has to be true, and what your record says'}
           </p>
         </div>
 
@@ -115,7 +115,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
                   </svg>
                 )}
               </span>
-              <span className="min-w-0 flex-1 text-[15px] text-ink-800">{ch.label}</span>
+              <span className="min-w-0 flex-1 text-[16px] text-ink-800">{ch.label}</span>
               <span
                 className={`shrink-0 text-[14px] font-semibold ${ch.ok ? 'text-go' : 'text-stop'}`}
               >
@@ -125,15 +125,11 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
           ))}
           {(g.status === 'not_applicable' ? applies : checks).length === 0 && (
             <li className="px-5 py-3 text-[14.5px] text-ink-500">
-              This gate has no conditions to check — it always applies.
+              There is nothing to check here. This step always applies.
             </li>
           )}
         </ul>
 
-        <p className="border-t border-ink-100 bg-ink-50 px-5 py-3 text-[12.5px] leading-relaxed text-ink-500">
-          Read straight from the gate spec, evaluated against your record. These are the same
-          conditions the countdown is computed from — nothing separate.
-        </p>
       </section>
 
       {/* the before / after that is the whole argument */}
@@ -148,7 +144,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
           <p className="mt-1 break-all font-mono text-[11.5px] text-ink-400">{proc.epfoHost}</p>
           <ul className="mt-4 space-y-2.5">
             {points.breaks.map((b) => (
-              <li key={b} className="flex gap-2.5 text-[14.5px] leading-snug text-ink-700">
+              <li key={b} className="flex gap-2.5 text-[15.5px] leading-relaxed text-ink-700">
                 <span className="mt-[3px] shrink-0 text-stop" aria-hidden>
                   <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.12"/><path d="M5 8h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
                 </span>
@@ -163,7 +159,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
           </p>
           <ul className="mt-4 space-y-2.5">
             {points.fix.map((b) => (
-              <li key={b} className="flex gap-2.5 text-[14.5px] leading-snug text-teal-900">
+              <li key={b} className="flex gap-2.5 text-[15.5px] leading-relaxed text-teal-900">
                 <span className="mt-[3px] shrink-0 text-teal-700" aria-hidden>
                   <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </span>
@@ -186,8 +182,8 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
       <h2 className="mt-11 text-[20px] font-bold tracking-tight text-ink-900">
         The screen you would be on right now
       </h2>
-      <p className="mt-2 mb-5 max-w-[68ch] text-[15px] leading-relaxed text-ink-700">
-        This is {EPFO_SCREENS[proc.id].screenTitle} as EPFO presents it — the same fields, the same
+      <p className="mt-2 mb-5 max-w-[68ch] text-[16px] leading-relaxed text-ink-700">
+        This is {EPFO_SCREENS[proc.id].screenTitle} as EPFO presents it - the same fields, the same
         order, the same wording. Read it and then compare it with what this site asks you for
         instead.
       </p>
@@ -228,7 +224,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
           </Alert>
         ) : g.status === 'blocked' ? (
           <Alert tone="error" title="Not yet">
-            You cannot act on this one yet. Clear the gates it depends on first — the order matters,
+            You cannot act on this one yet. Clear the gates it depends on first - the order matters,
             and attempting this now would fail.
           </Alert>
         ) : (

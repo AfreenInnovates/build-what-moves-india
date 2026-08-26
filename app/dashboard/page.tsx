@@ -4,10 +4,10 @@ import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
 import { Countdown } from '@/components/Countdown';
 import { ButtonLink } from '@/components/ui';
-import { AlertCard, StatTile } from '@/components/panels';
+import { AlertCard } from '@/components/panels';
 import { Icon } from '@/components/Icon';
 import { SECTIONS } from '@/lib/sections';
-import { transferStory, alerts, preFlight, money, pension, inr } from '@/lib/insights';
+import { transferStory, alerts, preFlight } from '@/lib/insights';
 
 export default async function DashboardPage() {
   const caseId = await currentCaseId();
@@ -18,9 +18,9 @@ export default async function DashboardPage() {
   const { resolution: r, member } = c;
   const story = transferStory(c);
   const attention = alerts(c).filter((a) => a.severity !== 'good');
+  /** How many alerts the overview shows before handing off to the Alerts page. */
+  const SHOWN = 4;
   const pre = preFlight(c);
-  const m = money(c);
-  const p = pension(c);
   const startGate = r.gates.find((g) => g.id === r.startToday);
 
   return (
@@ -62,63 +62,64 @@ export default async function DashboardPage() {
             )}
           </section>
 
-          <div className="grid grid-cols-2 gap-3">
-            <StatTile label="EPF balance" value={inr(m.balance)} tone="go" />
-            <StatTile
-              label="Total service"
-              value={p.yearsLabel}
-              sub={p.crossedTenYears ? 'Pension-eligible' : `${120 - p.serviceMonths} mo to pension line`}
-            />
-          </div>
         </div>
 
         {/* right column */}
         <div className="space-y-7">
-          {/* the transfer story — where did this break */}
-          <section className="rounded-md border-2 border-ink-100 bg-white p-5">
+          {/* the transfer story - where did this break */}
+          <section className="rounded-md border-2 border-ink-100 bg-white p-5" data-tour="overview">
             <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-teal-600">
-              What you are actually doing
+              Your claim, in one sentence
             </p>
-            <p className="mt-2 text-[17px] leading-relaxed text-ink-900">
-              You are pulling together the EPF you built up across{' '}
-              <span className="font-bold">{story.employerCount}</span>{' '}
-              {story.employerCount === 1 ? 'employer' : 'employers'}, from{' '}
-              <span className="font-bold text-teal-700">{story.fromEmployer}</span> through to{' '}
-              <span className="font-bold text-teal-700">{story.toEmployer}</span>.
+            <p className="mt-2.5 text-[19px] leading-relaxed text-ink-900">
+              {story.employerCount === 1 ? (
+                <>
+                  You are claiming the EPF you built up at{' '}
+                  <span className="font-bold text-teal-700">{story.fromEmployer}</span>.
+                </>
+              ) : (
+                <>
+                  You are claiming the EPF from all{' '}
+                  <span className="font-bold">{story.employerCount}</span> jobs on your record,
+                  starting at <span className="font-bold text-teal-700">{story.fromEmployer}</span>{' '}
+                  and ending at{' '}
+                  <span className="font-bold text-teal-700">{story.toEmployer}</span>.
+                </>
+              )}
             </p>
 
             {story.mistakes.length > 0 ? (
               <>
-                <p className="mt-4 text-[13px] font-bold uppercase tracking-[0.08em] text-stop">
-                  Where it went wrong along the way
+                <p className="mt-5 text-[13px] font-bold uppercase tracking-[0.08em] text-stop">
+                  What is standing in the way
                 </p>
                 <ul className="mt-2 space-y-2">
                   {story.mistakes.map((mi, i) => (
                     <li key={i} className="flex gap-3 rounded-sm bg-stop-soft/50 px-3.5 py-2.5">
                       <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-stop" aria-hidden />
-                      <p className="text-[14px] leading-snug text-ink-800">
+                      <p className="text-[15.5px] leading-relaxed text-ink-800">
                         <span className="font-semibold">{mi.where}:</span> {mi.what}
                       </p>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-                  None of this was your fault, and none of it showed up until now. The Action Center
-                  lists each fix and who has to make it.
+                <p className="mt-3.5 text-[14.5px] leading-relaxed text-ink-500">
+                  None of this was your fault, and none of it was visible until you tried to claim.
+                  The Action Center lists every fix and who has to make it.
                 </p>
               </>
             ) : (
-              <p className="mt-4 rounded-sm border-l-4 border-go bg-go-soft px-4 py-3 text-[14.5px] text-ink-800">
-                Nothing went wrong along the way. Every record lines up and your service is
-                continuous. This is what a clean history looks like.
+              <p className="mt-4 rounded-md border-l-4 border-go bg-go-soft px-4 py-3.5 text-[16px] leading-relaxed text-ink-800">
+                Nothing is standing in the way. Your records agree, your service has no gaps, and
+                you can file today.
               </p>
             )}
           </section>
 
           {/* pre-flight checklist */}
-          <section className="rounded-md border border-ink-100 bg-white p-5">
+          <section className="rounded-md border border-ink-100 bg-white p-5" data-tour="gates">
             <div className="flex items-center justify-between">
-              <h2 className="text-[17px] font-bold text-ink-900">Ready to file?</h2>
+              <h2 className="text-[19px] font-bold text-ink-900">Ready to file?</h2>
               <span
                 className={`rounded-full px-3 py-1 text-[12.5px] font-bold ${
                   pre.ready ? 'bg-go text-white' : 'bg-stop-soft text-stop'
@@ -152,25 +153,43 @@ export default async function DashboardPage() {
 
           {/* alerts summary */}
           {attention.length > 0 && (
-            <section>
+            <section data-tour="attention">
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-900"><Icon name="alerts" size={18} className="text-signal" aria-hidden /> Needs your attention</h2>
-                <Link href="/dashboard/alerts" className="text-[13.5px] font-semibold text-teal-700 hover:underline">
-                  See all →
+                <h2 className="flex items-center gap-2 text-[19px] font-bold text-ink-900"><Icon name="alerts" size={18} className="text-signal" aria-hidden /> Needs your attention</h2>
+                <Link href="/dashboard/alerts" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[14px] font-semibold text-teal-700 hover:underline">
+                  {attention.length > SHOWN ? `See all ${attention.length}` : 'See all'}
+                  <Icon name="arrow" size={15} aria-hidden />
                 </Link>
               </div>
               <div className="space-y-2.5">
-                {attention.slice(0, 3).map((a, i) => (
-                  <AlertCard key={i} alert={a} />
+                {attention.slice(0, SHOWN).map((a, i) => (
+                  <AlertCard key={`${a.gateId ?? 'x'}:${i}`} alert={a} />
                 ))}
               </div>
+              {/*
+                Silently cutting the list at three meant a member could be told
+                "2 still blocking" and shown one card. If anything is held back,
+                say how many and where they are.
+              */}
+              {attention.length > SHOWN && (
+                <Link
+                  href="/dashboard/alerts"
+                  className="mt-2.5 block rounded-lg border border-dashed border-ink-200 px-5 py-3 text-center text-[14.5px] font-semibold text-teal-700 hover:border-teal-700 hover:bg-teal-50"
+                >
+                  {attention.length - SHOWN} more{' '}
+                  {attention.length - SHOWN === 1 ? 'item needs' : 'items need'} your attention
+                </Link>
+              )}
             </section>
           )}
 
           {/* section tiles */}
           <section>
-            <h2 className="mb-2 text-[17px] font-bold text-ink-900">Explore your EPF</h2>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <h2 className="text-[19px] font-bold text-ink-900">Explore your EPF</h2>
+            <p className="mb-3 mt-1 text-[15px] leading-relaxed text-ink-600">
+              Each section answers one question about your claim.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
               {SECTIONS.filter((s) => s.href !== '/dashboard').map((s) => (
                 <Link
                   key={s.href}
@@ -183,7 +202,7 @@ export default async function DashboardPage() {
                     </span>
                     <p className="text-[15px] font-bold text-ink-900">{s.label}</p>
                   </div>
-                  <p className="mt-0.5 text-[13px] text-ink-500">{s.blurb}</p>
+                  <p className="mt-1.5 text-[14px] leading-relaxed text-ink-500">{s.blurb}</p>
                 </Link>
               ))}
             </div>

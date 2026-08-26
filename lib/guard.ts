@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 /**
  * Guards for the API routes.
  *
- * These endpoints spend money — each one calls a metered third-party API — and
+ * These endpoints spend money - each one calls a metered third-party API - and
  * they are reachable by anyone who loads the page. Without a ceiling, a single
  * open tab running a loop drains the quota for everybody, and the demo dies
  * mid-judging.
@@ -25,7 +25,7 @@ const buckets = new Map<string, Bucket>();
 /**
  * A small fixed-window limiter, keyed per case.
  *
- * In-memory, so it resets on deploy and does not span serverless instances —
+ * In-memory, so it resets on deploy and does not span serverless instances -
  * it is a guard rail against a runaway client, not a defence against a
  * determined attacker. Anything stronger needs Redis or Postgres, which is not
  * worth the round trip here.
@@ -48,7 +48,24 @@ export function withinLimit(key: string, limit: number, windowMs: number): boole
   return true;
 }
 
-/** Bytes, not characters — a multibyte payload should not slip past the cap. */
+/**
+ * Read a JSON body without letting a malformed one become a 500.
+ *
+ * `await req.json()` throws on anything that is not valid JSON, and an uncaught
+ * throw in a route handler is an unhandled server error. A request body is the
+ * one thing a caller fully controls, so "curl -d not-json" should be a 400 and
+ * not a crash in the logs.
+ */
+export async function readJson<T>(req: Request): Promise<T | null> {
+  try {
+    const body = await req.json();
+    return body && typeof body === 'object' ? (body as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Bytes, not characters - a multibyte payload should not slip past the cap. */
 export function tooLarge(text: string, maxBytes: number): boolean {
   return new TextEncoder().encode(text).length > maxBytes;
 }
