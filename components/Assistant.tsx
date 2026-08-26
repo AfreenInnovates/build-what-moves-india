@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { chunkForSpeech, recordWav, type WavRecorder } from './audio';
 import { LANGUAGE_NATIVE } from '@/lib/language';
+import { Icon } from './Icon';
 
 
 interface Msg {
@@ -70,7 +71,15 @@ export function Assistant({
   const firstName = member.name.split(' ')[0];
 
   /** What is actually in the box, settled words plus whatever is still being said. */
-  const composed = (input + (interim ? (input ? ' ' : '') + interim : '')).trim();
+  /**
+   * What is in the box: typed text, plus whatever the mic is still hearing.
+   *
+   * Deliberately NOT trimmed. This is the textarea's value, so trimming it here
+   * ran on every render - press space and the re-render stripped it straight
+   * back off, which made it impossible to type a space at all. Trimming belongs
+   * at the point of sending, not at the point of showing.
+   */
+  const composed = input + (interim ? (input ? ' ' : '') + interim : '');
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -314,16 +323,68 @@ export function Assistant({
           body: JSON.stringify({ message: q }),
           signal: controller.signal,
         });
-        const j = await r.json();
-        if (typeof j.lang === 'string' && /^[a-z]{2}-[A-Z]{2}$/.test(j.lang))
-          langRef.current = j.lang;
-        setMsgs((m) => [...m, { role: 'assistant', content: j.reply }]);
-        if (j.tour?.length) {
-          setTour(j.tour);
-          setTourAt(0);
-          setOpen(false);
+        /*
+         * Two shapes come back, and the content type says which.
+         *
+         * A walkthrough is built on the server and arrives whole as JSON, since
+         * there is nothing to stream - it exists before the request finishes.
+         * An answer arrives as plain text, token by token, so the first words
+         * are on screen long before the last ones are written.
+         */
+        const lang = r.headers.get('X-Lang');
+        if (lang && /^[a-z]{2}-[A-Z]{2}$/.test(lang)) langRef.current = lang;
+
+        if (r.headers.get('Content-Type')?.includes('application/json')) {
+          const j = await r.json();
+          if (typeof j.lang === 'string' && /^[a-z]{2}-[A-Z]{2}$/.test(j.lang))
+            langRef.current = j.lang;
+          setMsgs((m) => [...m, { role: 'assistant', content: j.reply }]);
+          if (j.tour?.length) {
+            setTour(j.tour);
+            setTourAt(0);
+            setOpen(false);
+          } else {
+            speak(j.reply);
+          }
+          return;
+        }
+
+        const reader = r.body?.getReader();
+        if (!reader) throw new Error('no stream');
+        const decoder = new TextDecoder();
+        let full = '';
+        // the empty bubble appears immediately, then fills
+        setMsgs((m) => [...m, { role: 'assistant', content: '' }]);
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          full += decoder.decode(value, { stream: true });
+          setMsgs((m) => {
+            const next = [...m];
+            next[next.length - 1] = { role: 'assistant', content: full };
+            return next;
+          });
+        }
+        /*
+         * An empty stream must not leave an empty bubble.
+         *
+         * If the upstream shape ever changes, or a connection drops mid-answer,
+         * nothing would be appended and the reply would just sit blank with no
+         * explanation. Saying so is worse than nothing only if it is wrong.
+         */
+        if (!full.trim()) {
+          setMsgs((m) => {
+            const next = [...m];
+            next[next.length - 1] = {
+              role: 'assistant',
+              content: 'I could not finish that answer. Please ask me again.',
+            };
+            return next;
+          });
         } else {
-          speak(j.reply);
+          // spoken once it is whole, so the voice is not chasing the text
+          speak(full);
         }
       } catch (e) {
         if ((e as Error).name !== 'AbortError') {
@@ -512,13 +573,44 @@ export function Assistant({
             )}
 
             {msgs.map((m, i) => (
-              <div
-                key={i}
-                className={`max-w-[88%] whitespace-pre-wrap rounded-md px-3.5 py-2.5 text-[14.5px] leading-relaxed ${
-                  m.role === 'user' ? 'ml-auto bg-teal-700 text-white' : 'bg-ink-50 text-ink-800'
-                }`}
-              >
-                {m.content}
+              <div key={i} className={m.role === 'user' ? 'flex justify-end' : ''}>
+                <div
+                  className={`max-w-[88%] whitespace-pre-wrap rounded-md px-3.5 py-2.5 text-[14.5px] leading-relaxed ${
+                    m.role === 'user' ? 'bg-teal-700 text-white' : 'bg-ink-50 text-ink-800'
+                  }`}
+                >
+                  {m.content}
+                </div>
+
+                {/*
+                  Controls on the message itself, not only on the panel.
+                  Hearing an answer again is a normal thing to want - the reply
+                  is three sentences about money and somebody may have missed
+                  the middle one - and there was no way to do it without asking
+                  the question a second time.
+                */}
+                {m.role === 'assistant' && m.content && (
+                  <div className="mt-1.5 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => speak(m.content)}
+                      className="inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-[12.5px] font-semibold text-ink-500 transition hover:bg-ink-50 hover:text-teal-700"
+                    >
+                      <Icon name="phone" size={13} aria-hidden />
+                      {speaking ? 'Listen again' : 'Listen'}
+                    </button>
+                    {speaking && (
+                      <button
+                        type="button"
+                        onClick={stopSpeech}
+                        className="inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-[12.5px] font-semibold text-signal transition hover:bg-signal-soft"
+                      >
+                        <span className="h-2.5 w-2.5 rounded-[1px] bg-signal" aria-hidden />
+                        Stop voice
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
 
@@ -540,7 +632,27 @@ export function Assistant({
             <div className="flex items-end gap-2">
               <button
                 type="button"
-                onClick={listen}
+                onClick={() => {
+                  const stopping = listening;
+                  listen();
+                  /*
+                   * Hand focus back to the box when the mic is switched off.
+                   *
+                   * The button keeps keyboard focus after a click, so pressing
+                   * Enter to send was re-activating the button instead - the mic
+                   * opened again, and the next thing Sarvam heard changed the
+                   * reply language. Focus belongs on the text you are about to
+                   * send.
+                   */
+                  if (stopping) {
+                    requestAnimationFrame(() => {
+                      const el = boxRef.current;
+                      if (!el) return;
+                      el.focus();
+                      el.setSelectionRange(el.value.length, el.value.length);
+                    });
+                  }
+                }}
                 className={`shrink-0 rounded-full p-2.5 transition ${
                   listening ? 'bg-signal text-white' : 'bg-ink-50 text-ink-700 hover:bg-ink-100'
                 }`}
@@ -588,7 +700,7 @@ export function Assistant({
                 </button>
               ) : (
                 <button
-                  disabled={!composed}
+                  disabled={!composed.trim()}
                   className="shrink-0 rounded-sm bg-teal-700 px-4 py-2.5 text-[14px] font-bold text-white transition hover:bg-teal-600 disabled:opacity-40"
                 >
                   Ask

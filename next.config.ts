@@ -24,6 +24,15 @@ const csp = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  /**
+   * The honesty page used to live at /whats-mocked. It is now a sourced
+   * comparison with what EPFO actually does, at /compare. Kept as a permanent
+   * redirect because the old address was linked from every page footer, and
+   * anyone who bookmarked it should still land somewhere useful.
+   */
+  async redirects() {
+    return [{ source: '/whats-mocked', destination: '/compare', permanent: true }];
+  },
   // the dev badge sits over the UI; off so screen recordings are clean
   devIndicators: false,
 

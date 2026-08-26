@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader, SiteFooter } from "@/components/Chrome";
+import { getT } from '@/lib/i18n';
 
 // Inter for body - crisp and highly legible at small sizes on cheap screens,
 // which is what this audience has. Bricolage Grotesque for headings adds warmth
@@ -30,7 +31,8 @@ export const metadata: Metadata = {
     "Find out what is blocking your EPF withdrawal before you file, not after you are rejected.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const t = await getT();
   return (
     <html
       lang="en"
@@ -42,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50
                      focus:rounded-sm focus:bg-teal-700 focus:px-4 focus:py-2 focus:text-white"
         >
-          Skip to main content
+          {t('Skip to main content')}
         </a>
         <SiteHeader />
         <div id="main" className="flex-1">

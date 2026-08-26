@@ -17,8 +17,27 @@ interface StepDef {
 const STEPS: StepDef[] = [
   { key: 'you', n: 1, icon: 'people', title: 'Your details', hint: 'On EPFO this comes from your Aadhaar. Here you just type it in.' },
   { key: 'job', n: 2, icon: 'employment', title: 'Your current employer', hint: 'On EPFO your employer registers you and generates your UAN.' },
-  { key: 'kyc', n: 3, icon: 'shield', title: 'Verify and create', hint: 'On EPFO this is Aadhaar OTP and KYC approval. We simulate it.' },
+  { key: 'docs', n: 3, icon: 'records', title: 'Your documents', hint: 'EPFO compares these four against each other. Upload the demo set and we will use them.' },
+  { key: 'kyc', n: 4, icon: 'shield', title: 'Verify and create', hint: 'On EPFO this is Aadhaar OTP and KYC approval. We simulate it.' },
 ];
+
+/**
+ * The four records a claim is judged against, as files.
+ *
+ * Nobody should have to find a real Aadhaar scan to try a demonstration, and we
+ * would not want them to. This mints a plausible set named after whatever they
+ * typed, so the upload step is something you can actually complete - and so the
+ * filenames on screen are theirs rather than a stranger's.
+ */
+const DEMO_DOCS = [
+  { key: 'aadhaar', label: 'Aadhaar', file: 'aadhaar', kb: 412 },
+  { key: 'pan', label: 'PAN card', file: 'pan-card', kb: 268 },
+  { key: 'bank', label: 'Bank passbook', file: 'bank-passbook', kb: 530 },
+  { key: 'epfo', label: 'EPFO profile', file: 'epfo-member-profile', kb: 194 },
+] as const;
+
+const slug = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'member';
 
 const CREATE_STEPS = [
   { label: 'Verifying your Aadhaar', note: 'Simulated. Nothing is checked or stored.', ms: 520 },
@@ -30,6 +49,21 @@ export function SignupWizard() {
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(-1);
   const [form, setForm] = useState({ name: '', dob: '', employer: '', joined: '' });
+  const [docs, setDocs] = useState<{ name: string; kb: number; label: string }[]>([]);
+  const [filling, setFilling] = useState(false);
+
+  const fillDocs = async () => {
+    if (filling) return;
+    setFilling(true);
+    const base = slug(form.name);
+    // added one at a time, so it reads as four files arriving rather than a
+    // list appearing from nowhere
+    for (const d of DEMO_DOCS) {
+      await new Promise((r) => setTimeout(r, 260));
+      setDocs((prev) => [...prev, { name: `${d.file}-${base}.pdf`, kb: d.kb, label: d.label }]);
+    }
+    setFilling(false);
+  };
   const formRef = useRef<HTMLFormElement>(null);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -38,7 +72,8 @@ export function SignupWizard() {
   const canNext =
     (step === 0 && form.name.trim().length > 1) ||
     (step === 1 && form.employer.trim().length > 1) ||
-    step === 2;
+    (step === 2 && docs.length === DEMO_DOCS.length) ||
+    step === 3;
 
   const create = async () => {
     for (let i = 0; i < CREATE_STEPS.length; i++) {
@@ -105,11 +140,71 @@ export function SignupWizard() {
             </>
           )}
           {step === 2 && (
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-[14px] text-ink-700">
+                  {docs.length === 0
+                    ? 'Nothing uploaded yet.'
+                    : `${docs.length} of ${DEMO_DOCS.length} uploaded.`}
+                </p>
+                <button
+                  onClick={fillDocs}
+                  disabled={filling || docs.length > 0}
+                  className="inline-flex items-center gap-1.5 rounded-md border-2 border-teal-700 bg-white px-3.5 py-2 text-[13.5px] font-bold text-teal-700 transition hover:bg-teal-50 disabled:opacity-50"
+                >
+                  <Icon name="bolt" size={14} aria-hidden />
+                  {filling ? 'Adding files' : 'Fill in demo documents'}
+                </button>
+              </div>
+
+              <ul className="mt-3 space-y-2">
+                {DEMO_DOCS.map((d, i) => {
+                  const got = docs[i];
+                  return (
+                    <li
+                      key={d.key}
+                      className={`flex items-center gap-3 rounded-md border px-3.5 py-2.5 ${
+                        got ? 'border-go/40 bg-go-soft/40' : 'border-dashed border-ink-200 bg-ink-50'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
+                          got ? 'bg-go text-white' : 'bg-white text-ink-400'
+                        }`}
+                      >
+                        <Icon name={got ? 'check' : 'records'} size={16} aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13.5px] font-semibold text-ink-900">
+                          {d.label}
+                        </span>
+                        <span className="block truncate text-[12.5px] text-ink-500">
+                          {got ? got.name : 'no file chosen'}
+                        </span>
+                      </span>
+                      {got && (
+                        <span className="tabular shrink-0 text-[12px] text-ink-500">{got.kb} KB</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <p className="mt-3 rounded-md border-l-4 border-wait bg-wait-soft px-3 py-2 text-[13px] leading-relaxed text-ink-800">
+                These are generated for the demonstration and named after what you typed. Nothing is
+                uploaded anywhere, no real document is read, and the identifiers inside them are
+                deliberately invalid.
+              </p>
+            </div>
+          )}
+
+          {step === 3 && (
             <div className="space-y-2 text-[14px] text-ink-700">
               <Review label="Name" value={form.name || 'not given'} />
               <Review label="Date of birth" value={form.dob || 'not given'} />
               <Review label="Employer" value={form.employer || 'not given'} />
               <Review label="Joined" value={form.joined || 'not given'} />
+              <Review label="Documents" value={`${docs.length} uploaded`} />
               <p className="mt-2 rounded-md border-l-4 border-wait bg-wait-soft px-3 py-2 text-[13px] leading-relaxed text-ink-800">
                 We will attach a set of synthetic records with one deliberate mismatch, so every
                 section has something to explore.
@@ -126,7 +221,7 @@ export function SignupWizard() {
           >
             Back
           </button>
-          {step < 2 ? (
+          {step < 3 ? (
             <button
               onClick={() => canNext && setStep((s) => s + 1)}
               disabled={!canNext}

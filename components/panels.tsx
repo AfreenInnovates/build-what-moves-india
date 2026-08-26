@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Alert as AlertData } from '@/lib/insights';
 import { Icon, type IconName } from './Icon';
+import { fill } from '@/lib/insights';
 
 /** The heading every section page opens with. */
 export function PageHead({
@@ -37,21 +38,23 @@ const SEV = {
  * link inside a large card is a needlessly small thing to hit, especially on a
  * phone.
  */
-export function AlertCard({ alert }: { alert: AlertData }) {
+export function AlertCard({ alert, t }: { alert: AlertData; t?: (s: string) => string }) {
+  const tr = t ?? ((s: string) => s);
   const s = SEV[alert.severity];
 
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[17px] font-bold text-ink-900">{alert.title}</p>
+        <p className="text-[17px] font-bold text-ink-900">{fill(tr(alert.title), alert.titleVars)}</p>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold ${s.chip}`}>
-          {s.word}
+          {tr(s.word)}
         </span>
       </div>
-      <p className="mt-2 text-[15.5px] leading-relaxed text-ink-700">{alert.detail}</p>
+      <p className="mt-2 text-[15.5px] leading-relaxed text-ink-700">{fill(tr(alert.detail), alert.vars)}
+        {alert.more ? ' ' + tr(alert.more) : ''}</p>
       {alert.gateId && (
         <span className="mt-3 inline-flex items-center gap-1.5 text-[14.5px] font-bold text-teal-700 group-hover:underline">
-          Fix this
+          {tr('Fix this')}
           <Icon name="arrow" size={16} aria-hidden />
         </span>
       )}

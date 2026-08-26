@@ -18,6 +18,10 @@ export const ordinal = (n: number) => {
   return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 };
 
+/** Drop values into a translated sentence: fill('{n} left', { n: '3' }). */
+export const fill = (s: string, vars?: Record<string, string>) =>
+  vars ? s.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m) : s;
+
 export const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 const monthsToYM = (m: number) => {
@@ -33,13 +37,15 @@ const monthsToYM = (m: number) => {
  * constraint; in the middle of a sentence it reads like an abbreviation someone
  * forgot to finish.
  */
-export const monthsInWords = (m: number) => {
+export const monthsInWords = (m: number, t: (s: string) => string = (x) => x) => {
   const y = Math.floor(m / 12);
   const mo = m % 12;
   const parts: string[] = [];
-  if (y) parts.push(`${y} year${y === 1 ? '' : 's'}`);
-  if (mo) parts.push(`${mo} month${mo === 1 ? '' : 's'}`);
-  return parts.join(' and ') || '0 months';
+  // the unit words go through the dictionary too - a Hindi sentence with
+  // "7 months" sitting in the middle of it is not a translated sentence
+  if (y) parts.push(`${y} ${t(y === 1 ? 'year' : 'years')}`);
+  if (mo) parts.push(`${mo} ${t(mo === 1 ? 'month' : 'months')}`);
+  return parts.join(` ${t('and')} `) || `0 ${t('months')}`;
 };
 
 const fmtDate = (d: string | null) =>
@@ -130,10 +136,11 @@ export interface TransferStory {
   employerCount: number;
   totalService: number;
   /** the mistakes that crept in along the way, oldest first */
-  mistakes: { where: string; what: string }[];
+  /** what went wrong and where. `vars` fills {placeholders} after translation. */
+  mistakes: { where: string; what: string; vars?: Record<string, string> }[];
 }
 
-export function transferStory(c: CaseView): TransferStory {
+export function transferStory(c: CaseView, t: (s: string) => string = (x) => x): TransferStory {
   const { rows } = employment(c);
   const chronological = [...rows].reverse();
   const current = rows[0];
@@ -150,7 +157,8 @@ export function transferStory(c: CaseView): TransferStory {
     if (r.gapBefore > 0)
       mistakes.push({
         where: r.name,
-        what: `For ${monthsInWords(r.gapBefore)} before this job, no money went into your PF at all. EPFO does not know why. Those months do not count towards your pension, so it is worth saying whether you were between jobs or your employer simply stopped paying.`,
+        what: 'For {span} before this job, no money went into your PF at all. EPFO does not know why. Those months do not count towards your pension, so it is worth saying whether you were between jobs or your employer simply stopped paying.',
+        vars: { span: monthsInWords(r.gapBefore, t) },
       });
     if (r.exitMissing)
       mistakes.push({
@@ -162,7 +170,8 @@ export function transferStory(c: CaseView): TransferStory {
   if (c.facts.blockingMismatches > 0)
     mistakes.push({
       where: 'Across your records',
-      what: `Your name, date of birth or parent's name is written differently on ${c.facts.blockingMismatches === 1 ? 'one of your records' : 'some of your records'}. EPFO matches these letter by letter, so even one spelling difference sends the claim back. ${c.facts.blockingMismatches === 1 ? 'One detail does' : `${c.facts.blockingMismatches} details do`} not match today.`,
+      what: "Your name, date of birth or parent's name is written differently on some of your records. EPFO matches these letter by letter, so even one spelling difference sends the claim back. {n} of them do not match today.",
+      vars: { n: String(c.facts.blockingMismatches) },
     });
 
   return {
@@ -280,6 +289,12 @@ export function pension(c: CaseView): PensionStatus {
 // -------------------------------------------------------------------- alerts
 
 export interface Alert {
+  /** a second sentence, translated on its own */
+  more?: string;
+  /** fills {placeholders} in `title` after translation */
+  titleVars?: Record<string, string>;
+  /** fills {placeholders} in `detail` after translation */
+  vars?: Record<string, string>;
   severity: 'blocking' | 'warning' | 'info' | 'good';
   title: string;
   detail: string;
@@ -287,7 +302,7 @@ export interface Alert {
   gateId?: string;
 }
 
-export function alerts(c: CaseView): Alert[] {
+export function alerts(c: CaseView, t: (s: string) => string = (x) => x): Alert[] {
   const out: Alert[] = [];
   const f = c.facts;
 
@@ -295,7 +310,9 @@ export function alerts(c: CaseView): Alert[] {
     out.push({
       severity: 'blocking',
       title: 'Your name or details are written differently in different places',
-      detail: `${f.blockingMismatches === 1 ? 'One detail is' : `${f.blockingMismatches} details are`} written differently across your Aadhaar, PAN, bank account and EPFO record. A computer compares them letter by letter, so the claim will keep coming back until all four say exactly the same thing.`,
+      detail:
+        '{n} of your details are written differently across your Aadhaar, PAN, bank account and EPFO record. A computer compares them letter by letter, so the claim will keep coming back until all four say exactly the same thing.',
+      vars: { n: String(f.blockingMismatches) },
       gateId: 'records_agree',
     });
 
@@ -318,8 +335,10 @@ export function alerts(c: CaseView): Alert[] {
   if (f.serviceGapMonths > 0)
     out.push({
       severity: 'warning',
-      title: `${monthsInWords(f.serviceGapMonths)} where nothing went into your PF`,
-      detail: `For ${f.serviceGapMonths === 1 ? 'that month' : 'those months'} no money went into your PF and no employer is named. ${f.serviceGapMonths === 1 ? 'It does' : 'They do'} not count towards your pension. Worth checking whether you were genuinely between jobs, or an employer stopped paying without telling you.`,
+      title: '{span} where nothing went into your PF',
+      titleVars: { span: monthsInWords(f.serviceGapMonths, t) },
+      detail:
+        'For that time no money went into your PF and no employer is named. It does not count towards your pension. Worth checking whether you were genuinely between jobs, or an employer stopped paying without telling you.',
       gateId: 'service_history',
     });
 
@@ -343,7 +362,8 @@ export function alerts(c: CaseView): Alert[] {
   if (!p.crossedTenYears && p.monthsToTenYears <= 12 && p.monthsToTenYears > 0)
     out.push({
       severity: 'info',
-      title: `You are ${monthsInWords(p.monthsToTenYears)} away from 10 years of service`,
+      title: 'You are {span} away from 10 years of service',
+      titleVars: { span: monthsInWords(p.monthsToTenYears, t) },
       detail: 'Before ten years of service you can take your pension money out as one payment. After ten years you cannot, and instead you receive a monthly pension once you turn 58. Neither is wrong, but it is worth choosing on purpose rather than by accident.',
     });
 
@@ -365,10 +385,13 @@ export function alerts(c: CaseView): Alert[] {
     out.push({
       severity: g.status === 'red' ? 'blocking' : 'warning',
       title: g.problem,
-      detail:
+      detail: g.blocks,
+      // kept separate rather than glued on: a sentence built by concatenation
+      // can never match a dictionary key, so the whole alert stayed in English
+      more:
         g.status === 'blocked'
-          ? `${g.blocks} You cannot start this one until the steps it depends on are cleared.`
-          : g.blocks,
+          ? 'You cannot start this one until the steps it depends on are cleared.'
+          : undefined,
       gateId: g.id,
     });
   }

@@ -7,6 +7,10 @@ import { documentsFor, intakeFor, countBlockingMismatches } from '@/lib/case';
 import { CasePicker, type PickerCard } from '@/components/CasePicker';
 import { NewProfile } from '@/components/NewProfile';
 import { ResetExamples } from '@/components/ResetExamples';
+import { listEmployers } from '@/lib/employer';
+import { SignInAs } from '@/components/SignInAs';
+import { Icon } from '@/components/Icon';
+import { getT } from '@/lib/i18n';
 
 // This page reads members from Postgres, so it must render per request.
 export const dynamic = 'force-dynamic';
@@ -20,9 +24,13 @@ const SCENARIO: Record<string, PickerCard['scenario']> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ reset?: string }>;
+  searchParams: Promise<{ reset?: string; as?: string }>;
 }) {
-  const justReset = (await searchParams).reset === '1';
+  const t = await getT();
+  const employers = await listEmployers();
+  const params = await searchParams;
+  const justReset = params.reset === '1';
+  const startOn = params.as === 'employer' ? 'employer' : 'employee';
   const cards: PickerCard[] = (await listMembersWithService()).map((m) => {
     // prefer the live case; fall back to a fresh derivation for anyone not opened yet
     const facts =
@@ -55,20 +63,87 @@ export default async function LoginPage({
         href="/"
         className="-ml-2 inline-flex min-h-[44px] items-center rounded-sm px-2 text-[14px] font-semibold text-teal-700 hover:underline"
       >
-        ← Home
+        {t('← Home')}
       </Link>
 
       <h1 className="mt-4 text-[36px] leading-[1.1] font-bold tracking-tight text-ink-900">
-        Whose claim shall we look at?
+        {t('Which side would you like to see?')}
       </h1>
       <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed text-ink-700">
-        Six people who have opened a claim to take their EPF money out, and each one is stuck for a
-        different real reason: a name that does not match, an exit date nobody recorded, a second
-        UAN, a nomination never filed. Sign in as any of them with the password shown on their
-        card, or set up your own case.
+        {t('A stalled claim has two sides. Six people who cannot get their EPF money out, each stuck for a different real reason - and the companies they used to work for, who are the only ones able to fix some of it.')}
       </p>
 
-      <CasePicker cards={cards} fresh={<NewProfile />} />
+      <SignInAs
+        initial={startOn}
+        labels={Object.fromEntries(
+          [
+            'Sign in as',
+            'Employee',
+            'Someone trying to get their own PF money out. Six people, each stuck differently.',
+            'Employer',
+            'A company they used to work for. Requests waiting on you to act.',
+          ].map((k) => [k, t(k)]),
+        )}
+        employer={
+          employers.length === 0 ? (
+            <div className="rounded-xl border border-ink-100 bg-white px-5 py-8 text-center">
+              <p className="text-[15.5px] leading-relaxed text-ink-700">
+                {t('No company has been sent a request yet. Open a case, go to Employer Requests and send one - the company will appear here.')}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {employers.map((e) => (
+                <a
+                  key={e.token}
+                  href={`/employer/${e.token}`}
+                  className="card-hover group flex h-full flex-col rounded-xl border border-ink-100 bg-white p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-[16.5px] font-bold text-ink-900">{e.name}</p>
+                    {e.waiting > 0 && (
+                      <span className="tabular shrink-0 rounded-full bg-stop px-2.5 py-1 text-[12px] font-bold text-white">
+                        {e.waiting}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 flex-1 text-[14px] leading-relaxed text-ink-600">
+                    {e.waiting > 0
+                      ? `${e.waiting} ${e.waiting === 1 ? t('request is waiting on them') : t('requests are waiting on them')}`
+                      : t('Everything sent to them has been dealt with')}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 border-t border-ink-100 pt-3.5 text-[13.5px] font-bold text-teal-700">
+                    {t('Open their queue')}
+                    <Icon name="arrow" size={14} aria-hidden />
+                  </span>
+                </a>
+              ))}
+            </div>
+          )
+        }
+        employee={
+          <>
+      <CasePicker
+        cards={cards}
+        fresh={<NewProfile />}
+        labels={Object.fromEntries(
+          [
+            'Claim rejected',
+            'Ready to file',
+            'Advance, still employed',
+            'Sign in',
+            'Opening…',
+            'UAN',
+            'days',
+            ...cards.map((c) => c.headline ?? ''),
+          ].map((k) => [k, t(k)]),
+        )}
+      />
+
+          </>
+        }
+      />
+
 
       <ResetExamples justReset={justReset} />
     </main>

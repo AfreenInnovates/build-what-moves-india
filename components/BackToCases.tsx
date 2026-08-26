@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 /** Long enough to actually read the two lines, short enough not to feel stuck. */
-const HOLD_MS = 2200;
+const HOLD_MS = 2000;
 
 /**
  * Going back to the case list is a sign-out, and it should say so.
@@ -27,7 +27,36 @@ export function BackToCases({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [leaving, setLeaving] = useState(false);
+  const pathname = usePathname();
+
+  /**
+   * Which page we started leaving from, rather than a plain "leaving" flag.
+   *
+   * This button lives in the site header, which is not unmounted by a client
+   * navigation - so a boolean set on click stayed true after arriving and left
+   * the overlay stuck over the next page forever. Comparing against the current
+   * path means arriving anywhere else clears it on its own, with no effect and
+   * nothing to reset.
+   */
+  const [from, setFrom] = useState<string | null>(null);
+
+  /**
+   * Forget the departure as soon as the route actually changes.
+   *
+   * Without this, "from" stayed pointing at /dashboard forever: leaving a case
+   * hid the overlay on arrival at /login, but signing into the NEXT case
+   * returned to /dashboard, the stale value matched again, and the overlay
+   * reappeared over a case nobody was leaving. Adjusting state during render on
+   * a changed value is React's own pattern for this - it re-renders immediately
+   * without committing the first pass, and needs no effect.
+   */
+  const [seenAt, setSeenAt] = useState(pathname);
+  if (seenAt !== pathname) {
+    setSeenAt(pathname);
+    if (from !== null) setFrom(null);
+  }
+
+  const leaving = from !== null && from === pathname;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -39,7 +68,16 @@ export function BackToCases({
 
   const go = () => {
     if (leaving) return;
-    setLeaving(true);
+
+    // Only worth explaining when you are actually inside somebody's case. From
+    // the home page or the case list this button is ordinary navigation, and a
+    // two second "signing you out" in front of it is just a delay.
+    if (!pathname.startsWith('/dashboard')) {
+      router.push('/login');
+      return;
+    }
+
+    setFrom(pathname);
     router.prefetch('/login');
     timer.current = setTimeout(() => router.push('/login'), HOLD_MS);
   };

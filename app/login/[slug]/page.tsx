@@ -5,12 +5,14 @@ import { DemoLogin } from '@/components/DemoLogin';
 import { Icon } from '@/components/Icon';
 import type { MemberRow } from '@/lib/case';
 
+
 export const dynamic = 'force-dynamic';
 
 export default async function PersonaLoginPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const m = await one<MemberRow>(`select * from members where slug = $1`, [slug]);
   if (!m) notFound();
+
 
   return (
     <main className="mx-auto w-full max-w-[460px] px-5 pb-28 pt-12">

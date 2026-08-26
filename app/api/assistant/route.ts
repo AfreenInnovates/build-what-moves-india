@@ -9,8 +9,6 @@ import { defaultTour, tourTarget } from '@/lib/tour';
 import {
   scriptLanguage,
   wantsTour,
-  isSpoken,
-  writtenIn,
   LANGUAGE_NAME,
   type Spoken,
 } from '@/lib/language';
@@ -143,8 +141,7 @@ Write numbers as digits - 15, not fifteen, and never in Kannada, Devanagari or T
 The same digits are printed on their screen, and they have to match.
 
 OUTPUT
-Reply with JSON only, nothing around it:
-{"reply": "what you say", "lang": "<code>"}`;
+Reply with the answer itself. No JSON, no quotes around it, no preamble.`;
 
   // Measured on the real prompt: gpt-oss-120b 3.7s, gpt-oss-20b 1.3s. The
   // smaller model answers this task just as accurately - the facts come from
@@ -273,54 +270,92 @@ Reply with JSON only, nothing around it:
     );
   }
 
-  const json = await res.json();
-  const raw = json.choices?.[0]?.message?.content ?? '{}';
-
-  let parsed: { reply?: string; lang?: string };
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    parsed = { reply: String(raw).slice(0, 600) };
-  }
-
-  // Script wins outright; otherwise take the model's reading, but only if it is
-  // a language we can actually speak aloud.
-  const replyLang: Spoken = scripted ?? (isSpoken(parsed.lang) ? parsed.lang : 'en-IN');
-
-  let reply = parsed.reply ?? "Sorry, I didn't catch that.";
-
-  // The prompt asks for plain hyphens and the model mostly obliges, but "mostly"
-  // is not a typographic standard. The rest of the site has no em or en dashes
-  // in its prose, and Saathi's words sit right beside it.
-  reply = reply.replace(/[\u2014\u2013]/g, '-');
-
   /**
-   * Trust, then verify. When the script told us the language outright, the reply
-   * has to actually come back in that script - a Kannada question answered in
-   * English is the one failure the person cannot work around. The model usually
-   * complies; when it does not, we translate rather than shrug.
+   * Stream the answer as it is written.
+   *
+   * It used to come back as one JSON object, which meant nothing could be shown
+   * until the whole reply existed - about a second and a half of a blinking
+   * cursor. Prose can be forwarded token by token instead, so the first words
+   * appear almost immediately.
+   *
+   * The language is decided here, not by the model, so it travels in a header
+   * rather than in the body - the body has to stay plain text to be streamable.
+   * Everything the model can no longer be trusted to format (the tour, the
+   * language, the dash rules) is handled around it.
    */
-  if (scripted && !writtenIn(reply, scripted)) {
-    console.warn('[assistant] model answered in the wrong script, repairing', scripted);
-    reply = (await translate([reply], LANGUAGE_NAME[scripted])).lines[0] ?? reply;
+  const replyLang: Spoken = scripted ?? 'en-IN';
+  const encoder = new TextEncoder();
+  let full = '';
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = res.body?.getReader();
+      if (!reader) return controller.close();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          // server-sent events: one `data: {...}` per line, `[DONE]` at the end
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const payload = t.slice(5).trim();
+            if (payload === '[DONE]') continue;
+            try {
+              const piece = JSON.parse(payload).choices?.[0]?.delta?.content;
+              if (typeof piece === 'string' && piece) {
+                const clean = piece.replace(/[\u2014\u2013]/g, '-');
+                full += clean;
+                controller.enqueue(encoder.encode(clean));
+              }
+            } catch {
+              /* a partial frame; the next read completes it */
+            }
+          }
+        }
+      } catch (e) {
+        console.error('[assistant] stream broke', e);
+      } finally {
+        controller.close();
+        store(full);
+      }
+    },
+  });
+
+  /** Written after the fact - the caller is waiting to read it, not to file it. */
+  function store(reply: string) {
+    if (!reply.trim()) return;
+    void query(
+      `insert into chat_messages (case_id, role, content)
+       select $1, x.role, x.content
+         from jsonb_to_recordset($2::jsonb) as x(role text, content text)`,
+      [
+        caseId,
+        JSON.stringify([
+          { role: 'user', content: message },
+          { role: 'assistant', content: reply },
+        ]),
+      ],
+    ).catch((e) => console.error('[assistant] could not store message', e));
   }
 
-  // fire and forget: the caller is waiting to hear this, not to have it filed
-  void query(
-    `insert into chat_messages (case_id, role, content)
-     select $1, x.role, x.content
-       from jsonb_to_recordset($2::jsonb) as x(role text, content text)`,
-    [
-      caseId,
-      JSON.stringify([
-        { role: 'user', content: message },
-        { role: 'assistant', content: reply },
-      ]),
-    ],
-  ).catch((e) => console.error('[assistant] could not store message', e));
-
-  return NextResponse.json({ reply, lang: replyLang, tour: null });
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Lang': replyLang,
+      'X-Accel-Buffering': 'no',
+    },
+  });
 }
+
 
 /**
  * One narrow call: the same lines, in another language. A small prompt with no

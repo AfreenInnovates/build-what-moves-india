@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { Icon } from './Icon';
+import { getT } from '@/lib/i18n';
 
 /**
  * The seventh tile in the picker. Shaped like the six people beside it, because
  * setting up your own case is a peer choice, not an afterthought below the grid.
  */
-export function NewProfile() {
+export async function NewProfile() {
+  const t = await getT();
   return (
     <Link
       href="/signup"
@@ -13,9 +15,9 @@ export function NewProfile() {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[17.5px] font-bold text-teal-900">Set up your own</p>
+          <p className="text-[17.5px] font-bold text-teal-900">{t('Set up your own')}</p>
           <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-1 text-[12.5px] font-semibold text-teal-700">
-            Takes a minute
+            {t('Takes a minute')}
           </span>
         </div>
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700">
@@ -29,7 +31,7 @@ export function NewProfile() {
       </p>
 
       <div className="mt-4 flex items-center justify-between border-t border-teal-200 pt-3.5 text-[12.5px] text-teal-700">
-        <span>For the demo only</span>
+        <span>{t('For the demo only')}</span>
         <span className="inline-flex items-center gap-1 font-semibold">
           Start <Icon name="route" size={13} aria-hidden />
         </span>

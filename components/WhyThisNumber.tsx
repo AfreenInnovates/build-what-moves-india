@@ -9,14 +9,23 @@ import type { Provenance } from '@/lib/gates/types';
  * number or we estimated it. The provenance is still on every route in the spec,
  * and still drives what this sentence says.
  */
-export function WhyThisNumber({ days, provenance }: { days: number; provenance: Provenance }) {
+export function WhyThisNumber({
+  days,
+  provenance,
+  t,
+}: {
+  days: number;
+  provenance: Provenance;
+  t?: (s: string) => string;
+}) {
+  const tr = t ?? ((x: string) => x);
   return (
     <details className="group mt-2">
       <summary className="cursor-pointer list-none text-[14.5px] font-bold text-teal-700 hover:underline">
-        Why {days === 0 ? 'no wait' : `${days} ${days === 1 ? 'day' : 'days'}`}?
+        {tr('Why')} {days === 0 ? tr('no wait') : `${days} ${days === 1 ? tr('day') : tr('days')}`}?
       </summary>
       <div className="mt-2.5 rounded-md border-l-4 border-teal-200 bg-ink-50 px-4 py-3.5">
-        <p className="text-[15.5px] leading-relaxed text-ink-800">{provenance.source}</p>
+        <p className="text-[15.5px] leading-relaxed text-ink-800">{tr(provenance.source)}</p>
       </div>
     </details>
   );

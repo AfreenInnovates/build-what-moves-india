@@ -3,14 +3,18 @@ import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
+import { getT } from '@/lib/i18n';
+import { fill } from '@/lib/insights';
 import { PageHead } from '@/components/panels';
 import { recordHealth } from '@/lib/insights';
+import { SpecimenDocs } from '@/components/SpecimenDocs';
 
 export default async function RecordsPage() {
   const caseId = await currentCaseId();
   if (!caseId) redirect('/login');
   const c = await loadCase(caseId).catch(() => null);
   if (!c) redirect('/login');
+  const t = await getT();
 
   const fields = recordHealth(c);
   const problems = fields.filter((f) => !f.agree).length;
@@ -19,19 +23,56 @@ export default async function RecordsPage() {
     <main className="px-5 pb-28 pt-7 lg:pl-9 lg:pr-6">
       <PageHead
         icon="records"
-        title="Record Health"
-        lead="Your name, date of birth and parent's name, side by side across all four records. EPFO treats Aadhaar as the truth - everything else has to match it exactly, or a claim is rejected."
+        title={t("Record Health")}
+        lead={t("Your name, date of birth and parent's name, side by side across all four records. EPFO treats Aadhaar as the truth - everything else has to match it exactly, or a claim is rejected.")}
       />
 
-      <div className="mt-6 max-w-[900px]">
+      <section className="mt-7 max-w-[900px]">
+        <h2 className="text-[19px] font-bold text-ink-900">{t('Your four records, side by side')}</h2>
+        <p className="mt-1.5 mb-4 max-w-[70ch] text-[15px] leading-relaxed text-ink-700">
+          {t(
+            'These are the four records EPFO compares. Anything printed in red differs somewhere across them, which is what a claim gets refused for. Nobody is ever shown them together, which is why the difference goes unnoticed for years.',
+          )}
+        </p>
+        <SpecimenDocs
+          documents={c.documents}
+          disagrees={new Set(fields.filter((f) => !f.agree).map((f) => f.field))}
+          labels={Object.fromEntries(
+            [
+              'Specimen',
+              'Name',
+              'Date of birth',
+              'Parent name',
+              'Aadhaar',
+              'Unique Identification Authority of India',
+              'Aadhaar number',
+              'PAN',
+              'Income Tax Department',
+              'Permanent Account Number',
+              'Bank passbook',
+              'Account holder details page',
+              'Account number',
+              'EPFO member profile',
+              "Employees' Provident Fund Organisation",
+              'UAN',
+              'Generated for this demonstration. The number above is deliberately invalid and this is not a copy of any real document.',
+            ].map((k) => [k, t(k)]),
+          )}
+        />
+      </section>
+
+      <div className="mt-8 max-w-[900px]">
         <div
           className={`mb-5 rounded-md border-l-4 px-4 py-3 text-[14.5px] font-semibold ${
             problems === 0 ? 'border-go bg-go-soft text-go' : 'border-stop bg-stop-soft text-stop'
           }`}
         >
           {problems === 0
-            ? 'All three fields agree across every record. Nothing here will get you rejected.'
-            : `${problems} field${problems === 1 ? '' : 's'} disagree. Each one is enough on its own to bounce a claim.`}
+            ? t('All three fields agree across every record. Nothing here will get you rejected.')
+            : fill(
+                t('{n} of the three fields disagree. Each one is enough on its own to bounce a claim.'),
+                { n: String(problems) },
+              )}
         </div>
 
         <div className="space-y-4">
@@ -60,7 +101,7 @@ export default async function RecordsPage() {
                     <span className="w-20 shrink-0 text-[13px] font-semibold text-ink-500">
                       {v.source}
                       {v.source === f.winner && (
-                        <span className="ml-1 text-[10px] font-bold text-teal-700">TRUTH</span>
+                        <span className="ml-1 text-[10px] font-bold text-teal-700">{t('TRUTH')}</span>
                       )}
                     </span>
                     <span
@@ -88,8 +129,10 @@ export default async function RecordsPage() {
               </div>
               {!f.agree && (
                 <p className="border-t border-ink-100 bg-ink-50 px-4 py-2.5 text-[13px] text-ink-700">
-                  Fix: everything must become the {f.winner} value. The bold rows above are what
-                  needs changing.
+                  {fill(
+                    t('Fix: everything must become the {winner} value. The bold rows above are what needs changing.'),
+                    { winner: f.winner },
+                  )}
                 </p>
               )}
             </div>
@@ -106,8 +149,7 @@ export default async function RecordsPage() {
         )}
 
         <p className="mt-6 text-[13px] leading-relaxed text-ink-500">
-          Matching is rule-based, never a language model - a hallucinated match would cost someone
-          their claim.
+          {t('Matching is rule-based, never a language model - a hallucinated match would cost someone their claim.')}
         </p>
       </div>
     </main>

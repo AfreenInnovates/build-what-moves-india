@@ -10,15 +10,18 @@ const ACTOR_LABEL = {
   epfo: 'EPFO must do this',
 } as const;
 
-export function GateList({ gates }: { gates: ResolvedGate[] }) {
+type T = (s: string) => string;
+
+export function GateList({ gates, t }: { gates: ResolvedGate[]; t?: T }) {
+  const tr = t ?? ((s: string) => s);
   const delay = (i: number) => `rise rise-${Math.min(i + 1, 5)}`;
-  const titleOf = (id: GateId) => gates.find((g) => g.id === id)?.title ?? id;
+  const titleOf = (id: GateId) => tr(gates.find((g) => g.id === id)?.title ?? id);
 
   return (
     <ol className="space-y-2">
       {gates.map((g, i) => (
         <div key={g.id} className={delay(i)}>
-          <GateRow gate={g} titleOf={titleOf} />
+          <GateRow gate={g} titleOf={titleOf} t={tr} />
         </div>
       ))}
     </ol>
@@ -28,9 +31,11 @@ export function GateList({ gates }: { gates: ResolvedGate[] }) {
 function GateRow({
   gate,
   titleOf,
+  t,
 }: {
   gate: ResolvedGate;
   titleOf: (id: GateId) => string;
+  t: T;
 }) {
   const actionable = gate.status === 'red' || gate.status === 'blocked';
   const waitingOn = gate.dependsOn.map(titleOf);
@@ -53,11 +58,11 @@ function GateRow({
                 gate.status === 'not_applicable' ? 'text-ink-300' : 'text-ink-900'
               }`}
             >
-              {gate.title}
+              {t(gate.title)}
             </p>
             {gate.onCriticalPath && (
               <span className="shrink-0 rounded-full bg-signal-soft px-2 py-0.5 text-[11px] font-semibold text-signal">
-                {gate.latencyDays}d on critical path
+                {gate.latencyDays}d {t('on critical path')}
               </span>
             )}
           </div>
@@ -71,37 +76,37 @@ function GateRow({
                 href={`/dashboard/fix/${gate.id}`}
                 className="inline-flex min-h-[24px] items-center text-[13px] font-semibold text-teal-700 hover:underline"
               >
-                See what was checked <Icon name="arrow" size={14} aria-hidden />
+                {t('See what was checked')} <Icon name="arrow" size={14} aria-hidden />
               </Link>
             </div>
           )}
 
           {actionable && (
             <>
-              <p className="mt-1.5 text-[15px] leading-relaxed text-ink-700">{gate.blocks}</p>
+              <p className="mt-1.5 text-[15px] leading-relaxed text-ink-700">{t(gate.blocks)}</p>
 
               <div className="mt-2.5 rounded-sm bg-ink-50 px-3 py-2.5">
-                <p className="text-[15px] leading-snug text-ink-900">{gate.route!.label}</p>
+                <p className="text-[15px] leading-snug text-ink-900">{t(gate.route!.label)}</p>
                 <p className="mt-1 text-[13.5px] text-ink-500">
-                  {ACTOR_LABEL[gate.actor!]} ·{' '}
+                  {t(ACTOR_LABEL[gate.actor!])} ·{' '}
                   {gate.route!.latencyDays === 0
-                    ? 'takes a minute'
-                    : `about ${gate.route!.latencyDays} working ${
-                        gate.route!.latencyDays === 1 ? 'day' : 'days'
+                    ? t('takes a minute')
+                    : `${t('about')} ${gate.route!.latencyDays} ${t('working')} ${
+                        gate.route!.latencyDays === 1 ? t('day') : t('days')
                       }`}
                 </p>
               </div>
 
               {gate.provenance && (
-                <WhyThisNumber days={gate.latencyDays} provenance={gate.provenance} />
+                <WhyThisNumber days={gate.latencyDays} provenance={gate.provenance} t={t} />
               )}
 
               {gate.status === 'blocked' ? (
                 <>
                   <p className="mt-2.5 text-[14px] leading-relaxed text-wait">
-                    Locked until you clear{' '}
+                    {t('Locked until you clear')}{' '}
                     {waitingOn.length === 2
-                      ? `${waitingOn[0]} and ${waitingOn[1]}`
+                      ? `${waitingOn[0]} ${t('and')} ${waitingOn[1]}`
                       : waitingOn.join(', ')}
                     .
                   </p>
@@ -109,7 +114,7 @@ function GateRow({
                     href={`/dashboard/fix/${gate.id}`}
                     className="mt-2 inline-flex min-h-[24px] items-center text-[13px] font-semibold text-teal-700 hover:underline"
                   >
-                    See what it will check <Icon name="arrow" size={14} aria-hidden />
+                    {t('See what it will check')} <Icon name="arrow" size={14} aria-hidden />
                   </Link>
                 </>
               ) : (
@@ -118,13 +123,13 @@ function GateRow({
                   className="mt-3 inline-block rounded-sm bg-teal-700 px-6 py-2.5 text-center
                              text-[14px] font-bold text-white transition hover:bg-teal-600"
                 >
-                  {proc.explainOnly ? 'Show me how' : 'Fix this'}
+                  {proc.explainOnly ? t('Show me how') : t('Fix this')}
                 </Link>
               )}
 
               {!gate.onCriticalPath && gate.status === 'red' && (
                 <p className="mt-2.5 text-[14px] leading-relaxed text-ink-500">
-                  Fixing this will not move the date - something slower is ahead of it.
+                  {t('Fixing this will not move the date - something slower is ahead of it.')}
                 </p>
               )}
             </>

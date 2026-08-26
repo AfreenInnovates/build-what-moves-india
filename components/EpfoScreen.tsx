@@ -7,12 +7,16 @@ import type { EpfoField, EpfoScreen as Screen } from '@/lib/epfo-screens';
  * something carries the note saying so.
  */
 export function EpfoScreenPreview({
+  t,
   screen,
   prefills,
 }: {
+  /** annotations are ours, so they translate; the reproduced form does not */
+  t?: (s: string) => string;
   screen: Screen;
   prefills: Partial<Record<NonNullable<EpfoField['prefill']>, string>>;
 }) {
+  const tr = t ?? ((x: string) => x);
   return (
     <div className="overflow-hidden rounded-md border-2 border-ink-100">
       {/* honesty banner, above the reproduction so it is read first */}
@@ -22,11 +26,10 @@ export function EpfoScreenPreview({
           <path d="M10 5v6M10 13.5v1" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
         </svg>
         <p className="text-[13.5px] leading-relaxed text-ink-800">
-          <span className="font-bold text-wait">This is the real EPFO screen, rebuilt.</span> Every
+          <span className="font-bold text-wait">{tr('This is the real EPFO screen, rebuilt.')}</span> Every
           field below is what the portal actually asks you for. Nothing here submits anywhere, no
           OTP is sent, and no document leaves your machine. Notes marked{' '}
-          <span className="font-semibold">In reality</span> say what the live system does at that
-          step.
+          <span className="font-semibold">{tr('In reality')}</span> {tr('say what the live system does at that step.')}
         </p>
       </div>
 
@@ -45,7 +48,7 @@ export function EpfoScreenPreview({
 
         <div className="space-y-4">
           {screen.fields.map((f) => (
-            <Field key={f.label} f={f} prefills={prefills} />
+            <Field key={f.label} f={f} prefills={prefills} t={tr} />
           ))}
         </div>
 
@@ -56,12 +59,12 @@ export function EpfoScreenPreview({
         >
           {screen.submit}
         </button>
-        <p className="mt-1.5 text-[12px] text-ink-400">Disabled - this reproduction submits nothing.</p>
+        <p className="mt-1.5 text-[12px] text-ink-400">{tr('Disabled - this reproduction submits nothing.')}</p>
       </div>
 
       <div className="border-t-2 border-ink-100 bg-ink-50 px-4 py-4 sm:px-5">
         <p className="text-[12.5px] font-bold uppercase tracking-[0.08em] text-ink-500">
-          What happens next, on the real portal
+          {tr('What happens next, on the real portal')}
         </p>
         <p className="mt-1.5 text-[14px] leading-relaxed text-ink-800">{screen.afterSubmit}</p>
         {screen.afterWait && (
@@ -75,9 +78,11 @@ export function EpfoScreenPreview({
 function Field({
   f,
   prefills,
+  t,
 }: {
   f: EpfoField;
   prefills: Partial<Record<NonNullable<EpfoField['prefill']>, string>>;
+  t: (s: string) => string;
 }) {
   const value = f.prefill ? prefills[f.prefill] : undefined;
   const base =
@@ -113,7 +118,7 @@ function Field({
         {f.kind === 'checkbox' && (
           <span className="flex items-center gap-2 text-[14px] text-ink-700">
             <span className="h-4 w-4 rounded-xs border-2 border-ink-300 bg-ink-50" />
-            Not ticked in this reproduction
+            {t('Not ticked in this reproduction')}
           </span>
         )}
 
@@ -129,7 +134,7 @@ function Field({
               ))}
             </div>
             <span className="rounded-xs border border-ink-300 px-2.5 py-1.5 text-[12.5px] text-ink-400">
-              Get OTP
+              {t('Get OTP')}
             </span>
           </div>
         )}
@@ -137,9 +142,9 @@ function Field({
         {f.kind === 'file' && (
           <div className="flex items-center gap-3 rounded-xs border border-dashed border-ink-300 bg-ink-50 px-3 py-3">
             <span className="rounded-xs border border-ink-300 bg-white px-2.5 py-1 text-[12.5px] text-ink-500">
-              Choose file
+              {t('Choose file')}
             </span>
-            <span className="text-[13px] text-ink-400">No file selected</span>
+            <span className="text-[13px] text-ink-400">{t('No file selected')}</span>
           </div>
         )}
 
@@ -163,8 +168,8 @@ function Field({
 
       {f.note && (
         <p className="mt-1.5 flex gap-1.5 text-[12.5px] leading-relaxed text-ink-500">
-          <span className="shrink-0 font-bold text-wait">In reality:</span>
-          <span>{f.note}</span>
+          <span className="shrink-0 font-bold text-wait">{t('In reality:')}</span>
+          <span>{t(f.note)}</span>
         </p>
       )}
     </div>

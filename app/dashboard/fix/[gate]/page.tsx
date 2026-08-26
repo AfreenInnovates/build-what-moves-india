@@ -1,3 +1,5 @@
+import { getT } from '@/lib/i18n';
+import { fill } from '@/lib/insights';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { loadCase } from '@/lib/case';
@@ -6,9 +8,11 @@ import { fixGate, currentCaseId } from '@/app/actions';
 import { Alert, ProcessList, StepIndicator, Button, ButtonLink, Tag } from '@/components/ui';
 import { WhyThisNumber } from '@/components/WhyThisNumber';
 import { EPFO_SCREENS } from '@/lib/epfo-screens';
+import { MOCK_APPS, GATE_APP, DEMO_VALUES } from '@/lib/mock-apps';
+import { MockFlow } from '@/components/MockFlow';
+import { completeStep } from '@/app/actions';
 import { SPEC } from '@/lib/gates/spec';
 import { explain } from '@/lib/gates/explain';
-import { EpfoScreenPreview } from '@/components/EpfoScreen';
 import type { GateId } from '@/lib/gates/types';
 
 const ACTOR_TEXT = {
@@ -26,6 +30,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
   if (!caseId) redirect('/login');
   const c = await loadCase(caseId).catch(() => null);
   if (!c) redirect('/login');
+  const t = await getT();
 
   const g = c.resolution.gates.find((x) => x.id === proc.id);
   if (!g) notFound();
@@ -39,14 +44,14 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
   const steps = c.resolution.gates
     .filter((x) => x.status !== 'not_applicable')
     .map((x) => ({
-      label: x.title,
+      label: t(x.title),
       state: x.status === 'green' ? ('done' as const) : x.id === g.id ? ('current' as const) : ('todo' as const),
     }));
 
   return (
     <main className="w-full max-w-[980px] px-5 pb-28 pt-7 lg:pl-9">
       <Link href="/dashboard" className="-ml-2 inline-flex min-h-[44px] items-center rounded-sm px-2 text-[14px] font-medium text-teal-700 hover:underline">
-        ← Back to your gates
+        {t('← Back to your gates')}
       </Link>
 
       <div className="mt-5">
@@ -54,22 +59,24 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
       </div>
 
       <h1 className="mt-7 text-[34px] leading-[1.12] font-bold tracking-tight text-ink-900">
-        {proc.name}
+        {t(proc.name)}
       </h1>
 
       {!done && g.route && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Tag tone={g.actor === 'you' ? 'success' : 'warning'}>{ACTOR_TEXT[g.actor!]}</Tag>
           <Tag>
-            {g.route.latencyDays === 0 ? 'Takes a minute' : `About ${g.route.latencyDays} working days`}
+            {g.route.latencyDays === 0
+              ? t('Takes a minute')
+              : `${t('About')} ${g.route.latencyDays} ${t('working days')}`}
           </Tag>
-          {g.onCriticalPath && <Tag tone="signal">On the critical path</Tag>}
+          {g.onCriticalPath && <Tag tone="signal">{t('On the critical path')}</Tag>}
         </div>
       )}
 
       {!done && g.provenance && (
         <div className="mt-3 max-w-[60ch]">
-          <WhyThisNumber days={g.latencyDays} provenance={g.provenance} />
+          <WhyThisNumber days={g.latencyDays} provenance={g.provenance} t={t} />
         </div>
       )}
 
@@ -85,16 +92,16 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
             }`}
           >
             {done
-              ? 'Done. Here is what we checked'
+              ? t('Done. Here is what we checked')
               : g.status === 'not_applicable'
                 ? 'This one does not apply to you. Here is why'
-                : 'What has to be true, and what your record says'}
+                : t('What has to be true, and what your record says')}
           </p>
         </div>
 
         <ul className="divide-y divide-ink-100 bg-white">
           {(g.status === 'not_applicable' ? applies : checks).map((ch) => (
-            <li key={ch.label} className="flex items-start gap-3 px-5 py-3">
+            <li key={t(ch.label)} className="flex items-start gap-3 px-5 py-3">
               <span className="mt-0.5 shrink-0" aria-hidden>
                 {ch.ok ? (
                   <svg width="18" height="18" viewBox="0 0 20 20">
@@ -115,17 +122,17 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
                   </svg>
                 )}
               </span>
-              <span className="min-w-0 flex-1 text-[16px] text-ink-800">{ch.label}</span>
+              <span className="min-w-0 flex-1 text-[16px] text-ink-800">{t(ch.label)}</span>
               <span
                 className={`shrink-0 text-[14px] font-semibold ${ch.ok ? 'text-go' : 'text-stop'}`}
               >
-                {ch.actual}
+                {t(ch.actual)}
               </span>
             </li>
           ))}
           {(g.status === 'not_applicable' ? applies : checks).length === 0 && (
             <li className="px-5 py-3 text-[14.5px] text-ink-500">
-              There is nothing to check here. This step always applies.
+              {t('There is nothing to check here. This step always applies.')}
             </li>
           )}
         </ul>
@@ -136,7 +143,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
       <section className="mt-9 grid gap-px overflow-hidden rounded-md border border-ink-100 bg-ink-100 md:grid-cols-2">
         <div className="bg-white p-5">
           <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-stop">
-            How EPFO does it today
+            {t('How EPFO does it today')}
           </p>
           <p className="mt-3 font-mono text-[12.5px] leading-relaxed text-ink-800">
             {proc.epfoPath}
@@ -148,14 +155,14 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
                 <span className="mt-[3px] shrink-0 text-stop" aria-hidden>
                   <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.12"/><path d="M5 8h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
                 </span>
-                <span>{b}</span>
+                <span>{t(b)}</span>
               </li>
             ))}
           </ul>
         </div>
         <div className="bg-teal-50 p-5">
           <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-teal-700">
-            What we do instead
+            {t('What we do instead')}
           </p>
           <ul className="mt-4 space-y-2.5">
             {points.fix.map((b) => (
@@ -163,7 +170,7 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
                 <span className="mt-[3px] shrink-0 text-teal-700" aria-hidden>
                   <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </span>
-                <span>{b}</span>
+                <span>{t(b)}</span>
               </li>
             ))}
           </ul>
@@ -172,23 +179,33 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
 
       {proc.warning && (
         <div className="mt-5">
-          <Alert tone="warning" title="The thing nobody tells you">
-            {proc.warning}
+          <Alert tone="warning" title={t('The thing nobody tells you')}>
+            {t(proc.warning)}
           </Alert>
         </div>
       )}
 
       {/* the real screen, reproduced, so anyone who has used the portal recognises it */}
       <h2 className="mt-11 text-[20px] font-bold tracking-tight text-ink-900">
-        The screen you would be on right now
+        {t('Do this step here')}
       </h2>
       <p className="mt-2 mb-5 max-w-[68ch] text-[16px] leading-relaxed text-ink-700">
-        This is {EPFO_SCREENS[proc.id].screenTitle} as EPFO presents it - the same fields, the same
-        order, the same wording. Read it and then compare it with what this site asks you for
-        instead.
+        {fill(
+          t(
+            'This is {screen}, rebuilt field for field - the same questions, the same order, the same wording. Fill it in and submit it, and the step is done. Nothing is sent to EPFO; the only thing that changes is your case here.',
+          ),
+          { screen: EPFO_SCREENS[proc.id].screenTitle },
+        )}
       </p>
-      <EpfoScreenPreview
-        screen={EPFO_SCREENS[proc.id]}
+      <MockFlow
+        app={MOCK_APPS[GATE_APP[proc.id].app]}
+        title={t(GATE_APP[proc.id].title)}
+        fields={EPFO_SCREENS[proc.id].fields}
+        gateId={proc.id}
+        afterSubmit={EPFO_SCREENS[proc.id].afterSubmit}
+        demo={DEMO_VALUES}
+        onComplete={completeStep}
+        completed={done}
         prefills={{
           name: c.member.epfo_name ?? c.member.display_name,
           uan: c.member.uan,
@@ -197,41 +214,60 @@ export default async function FixPage({ params }: { params: Promise<{ gate: stri
           employer: c.member.employer_name,
           exit: c.member.date_of_exit ?? '',
         }}
+        labels={Object.fromEntries(
+          [
+            'A working rebuild, not the real app',
+            'Fill in demo details',
+            'Demo details filled in.',
+            'Nothing here is your real data.',
+            'Fill the required fields, or use the button above.',
+            'This step is now marked done on your claim.',
+            'In reality:',
+            'Select',
+            'I agree',
+            MOCK_APPS[GATE_APP[proc.id].app].name,
+            MOCK_APPS[GATE_APP[proc.id].app].tagline,
+            MOCK_APPS[GATE_APP[proc.id].app].submit,
+            MOCK_APPS[GATE_APP[proc.id].app].working,
+            MOCK_APPS[GATE_APP[proc.id].app].done,
+            EPFO_SCREENS[proc.id].afterSubmit,
+            ...EPFO_SCREENS[proc.id].fields.flatMap((f) => [f.label, f.note ?? '', ...(f.options ?? [])]),
+          ]
+            .filter(Boolean)
+            .map((k) => [k, t(k)]),
+        )}
       />
 
       <h2 className="mt-11 mb-5 text-[20px] font-bold tracking-tight text-ink-900">
-        {proc.explainOnly ? 'What you need to do, in order' : 'How this works here instead'}
+        {proc.explainOnly ? t('What you need to do, in order') : t('How this works here instead')}
       </h2>
-      <ProcessList steps={proc.steps} />
+      <ProcessList steps={proc.steps.map(t)} />
 
       {proc.explainOnly && (
         <div className="mt-6">
-          <Alert tone="info" title="A limit we are being straight about">
-            We cannot rebuild face authentication here, and we are not going to pretend otherwise.
-            This step happens inside UMANG. What we can do is make sure you go in knowing exactly
-            what it will ask for.
+          <Alert tone="info" title={t('What is real here and what is not')}>
+            {t('The screen above is rebuilt, but the face check is not real: no camera opens, nothing is matched against UIDAI, and no OTP is sent. On the real UMANG app this step is a live liveness check. What this rebuild gives you is every question it will ask, in order, so you go in already knowing the answers.')}
           </Alert>
         </div>
       )}
 
       <div className="mt-10">
         {done ? (
-          <Alert tone="success" title="Cleared">
-            <p>This gate is done. Nothing here is blocking your claim any more.</p>
+          <Alert tone="success" title={t('Cleared')}>
+            <p>{t('This gate is done. Nothing here is blocking your claim any more.')}</p>
             <ButtonLink href="/dashboard" className="mt-4">
-              Back to your gates
+              {t('Back to your gates')}
             </ButtonLink>
           </Alert>
         ) : g.status === 'blocked' ? (
-          <Alert tone="error" title="Not yet">
-            You cannot act on this one yet. Clear the gates it depends on first - the order matters,
-            and attempting this now would fail.
+          <Alert tone="error" title={t('Not yet')}>
+            {t('You cannot act on this one yet. Clear the gates it depends on first - the order matters, and attempting this now would fail.')}
           </Alert>
         ) : (
           <form action={fixGate}>
             <input type="hidden" name="gateId" value={proc.id} />
             <Button className="w-full sm:w-auto">
-              {proc.explainOnly ? 'I have done this' : 'Mark this done'}
+              {proc.explainOnly ? t('I already did this in the real app') : t('Mark this done')}
             </Button>
           </form>
         )}

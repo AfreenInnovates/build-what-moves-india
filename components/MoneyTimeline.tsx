@@ -8,7 +8,13 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * right, flat where there was a gap in contributions - so a break in your record
  * is something you can see, not just read about.
  */
-export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
+export function MoneyTimeline({
+  data,
+  t = (s: string) => s,
+}: {
+  data: ContributionTimeline;
+  t?: (s: string) => string;
+}) {
   const { points, yearTicks, total } = data;
   if (points.length < 2) return null;
 
@@ -44,7 +50,7 @@ export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
   return (
     <section className="rounded-xl border border-ink-100 bg-white p-5">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-[16px] font-bold text-ink-900">How it built up</h2>
+        <h2 className="text-[16px] font-bold text-ink-900">{t('How it built up')}</h2>
         <span className="tabular text-[13px] font-semibold text-ink-500">
           {points[0].year} to {points.at(-1)!.year}
         </span>
@@ -95,11 +101,11 @@ export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-[12px] text-ink-500">
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-4 rounded-xs bg-teal-500/40" /> balance climbing
+          <span className="h-2.5 w-4 rounded-xs bg-teal-500/40" /> {t('balance climbing')}
         </span>
         {data.points.some((p) => !p.employer) && (
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-4 rounded-xs bg-wait-soft" /> gap - no contributions
+            <span className="h-2.5 w-4 rounded-xs bg-wait-soft" /> {t('gap - no contributions')}
           </span>
         )}
         <span className="ml-auto tabular font-semibold text-ink-700">Now: {inr(total)}</span>
@@ -107,7 +113,7 @@ export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
 
       {/* recent months, plainly listed */}
       <div className="mt-5">
-        <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-ink-500">Recent months</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-ink-500">{t('Recent months')}</p>
         <ul className="mt-2 divide-y divide-ink-100">
           {recent.map((p) => (
             <li key={p.key} className="flex items-center justify-between gap-3 py-2 text-[13.5px]">
@@ -115,7 +121,7 @@ export function MoneyTimeline({ data }: { data: ContributionTimeline }) {
                 {MONTHS[p.month - 1]} {p.year}
               </span>
               <span className="min-w-0 flex-1 truncate text-ink-700">
-                {p.employer ?? <span className="text-wait">gap - no contribution</span>}
+                {p.employer ?? <span className="text-wait">{t('gap - no contribution')}</span>}
               </span>
               <span className={`tabular shrink-0 font-semibold ${p.added > 0 ? 'text-go' : 'text-ink-300'}`}>
                 {p.added > 0 ? `+${inr(p.added)}` : '-'}

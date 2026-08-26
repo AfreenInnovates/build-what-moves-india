@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { loadCase } from '@/lib/case';
 import { LeaveCase } from './LeaveCase';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { LoginMenu } from './LoginMenu';
+import { getLang, translator } from '@/lib/i18n';
 import { BackToCases } from './BackToCases';
 
 /** Highlighted phrase. Used sparingly - if everything is highlighted, nothing is. */
@@ -26,40 +29,59 @@ export async function SiteHeader() {
   // loadCase is deduped per render, so on dashboard pages this costs no extra query
   const c = caseId ? await loadCase(caseId).catch(() => null) : null;
   const signedIn = Boolean(c);
+  const lang = await getLang();
+  const t = translator(lang);
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-5 py-4">
-        <Link href="/" className="-my-1 flex min-h-[44px] items-center gap-2.5 py-1">
+      <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-2 px-3 py-4 sm:px-5">
+        <Link href="/" className="-my-1 flex min-h-[44px] shrink-0 items-center gap-2 py-1 sm:gap-2.5">
           <svg width="23" height="23" viewBox="0 0 20 20" aria-hidden>
             <circle cx="10" cy="10" r="7" fill="none" stroke="var(--color-teal-700)" strokeWidth="2" />
             <path d="M10 3a7 7 0 0 1 0 14z" fill="var(--color-teal-700)" />
           </svg>
-          <span className="text-[17px] font-bold tracking-tight text-ink-900">Seven Gates</span>
+          <span className="hidden text-[17px] font-bold tracking-tight text-ink-900 sm:inline">
+            {t('Seven Gates')}
+          </span>
         </Link>
 
-        <nav className="flex items-center gap-1.5">
+        <nav className="flex min-w-0 items-center gap-1 sm:gap-1.5">
+          <LanguageSwitcher current={lang} />
           {signedIn ? (
             <>
-              <BackToCases className="rounded-sm px-3.5 py-2 text-[15px] text-ink-700 transition hover:bg-ink-50 disabled:opacity-60">
-                View open cases
+              <BackToCases className="whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-ink-50 disabled:opacity-60 sm:px-3.5 sm:text-[15px]">
+                <span className="sm:hidden">{t('Cases')}</span>
+                <span className="hidden sm:inline">{t('View open cases')}</span>
               </BackToCases>
+              <Link
+                href="/compare"
+                title={t('See what EPFO does today and what we changed, with sources')}
+                className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-ink-50 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+              >
+                {t('EPFO vs us')}
+              </Link>
               <LeaveCase name={c!.member.display_name} />
             </>
           ) : (
             <>
               <Link
-                href="/whats-mocked"
-                className="rounded-sm px-3.5 py-2 text-[15px] text-ink-700 transition hover:bg-ink-50"
+                href="/compare"
+                title={t('See what EPFO does today and what we changed, with sources')}
+                className="hidden rounded-sm px-3.5 py-2 text-[15px] text-ink-700 transition hover:bg-ink-50 sm:inline-flex"
               >
-                What&rsquo;s mocked
+                {t('EPFO vs us')}
               </Link>
-              <Link
-                href="/login"
-                className="rounded-sm bg-teal-700 px-4 py-2 text-[15px] font-bold text-white transition hover:bg-teal-600"
-              >
-                Open a demo
-              </Link>
+              <LoginMenu
+                labels={Object.fromEntries(
+                  [
+                    'Log in',
+                    'Employee',
+                    'Get your own PF money out',
+                    'Employer',
+                    'Act on requests from former staff',
+                  ].map((k) => [k, t(k)]),
+                )}
+              />
             </>
           )}
         </nav>
@@ -68,15 +90,26 @@ export async function SiteHeader() {
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const t = translator(await getLang());
   return (
     <footer className="mt-20 border-t border-ink-100 bg-white">
       <div className="mx-auto w-full max-w-[1120px] px-5 py-8">
         <p className="text-[13px] leading-relaxed text-ink-500">
-          An independent tool, not affiliated with or endorsed by EPFO or the Government of India. No
-          real Aadhaar, PAN or bank data is used anywhere in this project.{' '}
-          <Link href="/whats-mocked" className="inline-flex min-h-[24px] items-center underline hover:text-teal-600">
-            See exactly what is mocked
+          {t(
+            'A prototype built for the Build What Moves India hackathon. It is not EPFO, it is not connected to EPFO, and it is not approved by EPFO or the Government of India. Nothing here reaches any real system, and no real Aadhaar, PAN or bank data is used anywhere in it.',
+          )}{' '}
+          <a
+            href="https://buildwhatmovesindia.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-[24px] items-center underline hover:text-teal-600"
+          >
+            {t('About the hackathon')}
+          </a>
+          .{' '}
+          <Link href="/compare" className="inline-flex min-h-[24px] items-center underline hover:text-teal-600">
+            {t('See how this compares with EPFO, with sources')}
           </Link>
           .
         </p>

@@ -13,11 +13,18 @@ export function Countdown({
   from,
   blocking,
   total,
+  labels,
 }: {
   days: number;
   from: number | null;
   blocking: number;
   total: number;
+  /**
+   * Already translated on the server. A translator function cannot cross into a
+   * client component - only serialisable props do - so the words come over as
+   * plain strings rather than something to call.
+   */
+  labels?: Record<string, string>;
 }) {
   const [shown, setShown] = useState(from ?? days);
   const raf = useRef<number | null>(null);
@@ -47,11 +54,12 @@ export function Countdown({
   }, [days, from]);
 
   const done = blocking === 0;
+  const tr = (k: string) => labels?.[k] ?? k;
 
   return (
     <div className="px-5 pt-7 pb-6">
       <p className="text-[13px] uppercase tracking-[0.14em] text-ink-500">
-        {done ? 'Your money arrives in' : 'Your money is blocked for'}
+        {done ? tr('Your money arrives in') : tr('Your money is blocked for')}
       </p>
 
       <div className="mt-1 flex items-baseline gap-2.5">
@@ -61,16 +69,16 @@ export function Countdown({
         >
           {shown}
         </span>
-        <span className="text-[20px] font-medium text-ink-700">working days</span>
+        <span className="text-[20px] font-medium text-ink-700">{tr('working days')}</span>
       </div>
 
       <p className="mt-3 text-[15px] text-ink-700">
         {done ? (
-          <>Nothing is blocking you. This is what a clean claim looks like.</>
+          <>{tr('Nothing is blocking you. This is what a clean claim looks like.')}</>
         ) : (
           <>
-            <span className="font-semibold text-ink-900">{blocking}</span> of {total} gates are
-            blocking. Not all of them cost you time.
+            <span className="font-semibold text-ink-900">{blocking}</span>{' '}
+            {tr('of')} {total} {tr('steps are blocking. Not all of them cost you time.')}
           </>
         )}
       </p>

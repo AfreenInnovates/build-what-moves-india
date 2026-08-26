@@ -22,6 +22,41 @@ await c.query(`
 await c.query(`create index if not exists chat_case_idx on chat_messages(case_id, id)`);
 
 /**
+ * Requests a member has sent to their old employer.
+ *
+ * The employer half of this journey is the half nobody builds, and it needs
+ * state of its own: a member has to be able to see that the request is sitting
+ * with somebody, that it was opened, and that it was acted on. One row per
+ * member per step, so re-sending does not pile up duplicates.
+ */
+await c.query(`
+  create table if not exists employer_requests (
+    id bigserial primary key,
+    case_id uuid not null references cases(id) on delete cascade,
+    gate_id text not null,
+    employer_name text not null,
+    status text not null default 'pending' check (status in ('pending','viewed','done')),
+    created_at timestamptz not null default now(),
+    viewed_at timestamptz,
+    done_at timestamptz,
+    unique (case_id, gate_id)
+  )`);
+await c.query(`create index if not exists employer_req_name_idx on employer_requests(employer_name, status)`);
+await c.query(`create index if not exists employer_req_case_idx on employer_requests(case_id)`);
+
+/**
+ * An opaque reference for each request, so a shared link never carries a case id.
+ *
+ * The employer link is passed around in email and WhatsApp. Putting the member's
+ * case UUID in the path meant anyone forwarded that link learned an identifier
+ * that opens the member's own dashboard - a much bigger key than the one job
+ * they were being asked to do.
+ */
+await c.query(`alter table employer_requests add column if not exists ref text`);
+await c.query(`update employer_requests set ref = replace(gen_random_uuid()::text, '-', '') where ref is null`);
+await c.query(`create unique index if not exists employer_req_ref_idx on employer_requests(ref)`);
+
+/**
  * Postgres indexes the column a foreign key POINTS AT, never the column holding
  * the key. Every lookup below walks a child table by its parent id, so without
  * these each one is a sequential scan. At six demo members that is free; at any

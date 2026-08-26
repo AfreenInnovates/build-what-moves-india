@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { useFormStatus } from 'react-dom';
 import { signOut } from '@/app/actions';
@@ -25,8 +26,14 @@ function Confirm({ first }: { first: string }) {
  * keep you logged in, because six cases have to be reachable one after another.
  */
 export function LeaveCase({ name }: { name: string }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const first = name.split(' ')[0];
+
+  // "Leave" means leave THIS person's case. On the home page or the case list
+  // you are not inside one, so the button has nothing to leave and only invites
+  // the question of what it would do.
+  if (!pathname.startsWith('/dashboard')) return null;
 
   // Portalled to the body on purpose. This button lives inside the site header,
   // and the header carries backdrop-blur - an element with a backdrop-filter
@@ -38,7 +45,7 @@ export function LeaveCase({ name }: { name: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="rounded-sm px-3.5 py-2 text-[15px] text-ink-500 transition hover:bg-ink-50"
+        className="whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-500 transition hover:bg-ink-50 sm:px-3.5 sm:text-[15px]"
       >
         Leave
       </button>

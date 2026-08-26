@@ -39,7 +39,14 @@ function Pending({ active }: { active: boolean }) {
   );
 }
 
-export function SectionNav({ alertCount }: { alertCount: number }) {
+export function SectionNav({
+  alertCount,
+  labels,
+}: {
+  alertCount: number;
+  /** section labels already translated on the server, keyed by href */
+  labels: Record<string, string>;
+}) {
   const path = usePathname();
 
   return (
@@ -57,7 +64,7 @@ export function SectionNav({ alertCount }: { alertCount: number }) {
             }`}
           >
             <Icon name={s.icon} size={18} aria-hidden className="shrink-0" />
-            <span className="flex-1">{s.label}</span>
+            <span className="flex-1">{labels[s.href] ?? s.label}</span>
             <Pending active={active} />
             {s.href === '/dashboard/alerts' && alertCount > 0 && (
               <span

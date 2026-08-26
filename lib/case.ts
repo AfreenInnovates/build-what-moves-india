@@ -112,7 +112,10 @@ export async function listMembersWithService(): Promise<
        (select c.facts from cases c where c.member_id = m.id
          order by c.created_at desc limit 1) as "caseFacts"
      from members m
-     order by m.scenario desc, m.slug`,
+     -- Ravi leads on purpose: four employers, a second UAN, no exit date and
+     -- three mismatched fields, so the first case anyone opens is the one that
+     -- shows the most of what this does
+     order by (m.slug <> 'ravi'), m.scenario desc, m.slug`,
   );
 }
 
@@ -375,6 +378,9 @@ export async function resetAllCases(): Promise<number> {
     [JSON.stringify(payload.map((p) => ({ case_id: p.case_id, facts: p.facts })))],
   );
   await query(`delete from events where case_id = any($1::uuid[])`, [ids]);
+  // requests sent to employers belong to the run that sent them; leaving them
+  // behind made a reset case still claim its employer had already acted
+  await query(`delete from employer_requests where case_id = any($1::uuid[])`, [ids]);
   await query(`delete from gate_states where case_id = any($1::uuid[])`, [ids]);
 
   for (const p of payload) {

@@ -3,8 +3,14 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { startCase, applyFix, createOwnProfile, resetAllCases } from '@/lib/case';
+import { startCase, applyFix, createOwnProfile, resetAllCases, loadCase } from '@/lib/case';
 import type { GateId } from '@/lib/gates/types';
+import {
+  employerFromToken,
+  sendRequest,
+  markDone,
+  requestByRef,
+} from '@/lib/employer';
 import { SPEC } from '@/lib/gates/spec';
 
 /** Gate ids the spec actually defines. A form field is not a promise. */
@@ -79,6 +85,67 @@ export async function fixGate(formData: FormData) {
  * than inside a case, because it is a housekeeping action for whoever is showing
  * the product, not something a member would ever do to their own claim.
  */
+/**
+ * Complete a step from inside one of the rebuilt apps.
+ *
+ * Same effect as pressing "mark this done" on the gate page - the mock flow is a
+ * nicer way to arrive at it, not a different code path. The gate id is checked
+ * against the spec here too, because a server action is a public endpoint.
+ */
+export async function completeStep(gateId: string) {
+  const caseId = await currentCaseId();
+  if (!caseId) return;
+  if (!GATE_IDS.has(gateId)) return;
+  await applyFix(caseId, gateId as GateId);
+  revalidatePath('/dashboard', 'layout');
+}
+
+/** The member sends one request to their old employer, and it is recorded. */
+export async function sendEmployerRequest(formData: FormData) {
+  const caseId = await currentCaseId();
+  if (!caseId) return;
+  const gateId = String(formData.get('gateId') ?? '');
+  if (!GATE_IDS.has(gateId)) return;
+
+  /*
+   * Who the employer is comes from the case, never from the form.
+   *
+   * Taking the establishment name off the request meant a signed-in member
+   * could post any company they liked and drop a request into that company's
+   * queue - or invent a queue for a company that does not exist. The only
+   * employer you can send to is the one on your own record.
+   */
+  const c = await loadCase(caseId).catch(() => null);
+  if (!c?.member.employer_name) return;
+
+  await sendRequest(caseId, gateId as GateId, c.member.employer_name, c.member.display_name);
+  revalidatePath('/dashboard', 'layout');
+}
+
+/**
+ * The employer acts on one member's request.
+ *
+ * No session is involved: whoever holds the link is treated as the employer,
+ * exactly as an emailed action link works before it is signed. The establishment
+ * comes out of the token rather than the request body, so a link can only ever
+ * act on that employer's own queue.
+ */
+export async function employerAction(formData: FormData) {
+  const employer = await employerFromToken(String(formData.get('token') ?? ''));
+  const ref = String(formData.get('ref') ?? '');
+  if (!employer) return;
+
+  // the gate and the case both come from the stored request, never from the
+  // form, so a link can only ever do the one thing it was created for
+  const req = await requestByRef(employer, ref);
+  if (!req || !GATE_IDS.has(req.gate_id)) return;
+
+  await applyFix(req.case_id, req.gate_id);
+  await markDone(employer, ref);
+  revalidatePath('/employer', 'layout');
+  revalidatePath('/dashboard', 'layout');
+}
+
 export async function resetAllExamples() {
   await resetAllCases();
   revalidatePath('/', 'layout');
