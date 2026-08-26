@@ -274,7 +274,7 @@ h1, h2, h3, .font-display {
   inset: 0;
   pointer-events: none;
   opacity: 0.58;
-  background-image: url('/images/home-paperflow.png');
+  background-image: url('/images/home-paperflow.webp');
   background-position: right center;
   background-size: auto 100%;
   background-repeat: no-repeat;
@@ -323,7 +323,7 @@ h1, h2, h3, .font-display {
   background-color: #04404c;
   background-image:
     linear-gradient(90deg, rgba(3,43,51,0.98) 0%, rgba(4,64,76,0.9) 38%, rgba(4,64,76,0.24) 100%),
-    url('/images/home-guided-route.png');
+    url('/images/home-guided-route.webp');
   background-position: center, right center;
   background-size: cover, auto 150%;
   background-repeat: no-repeat;
@@ -360,7 +360,7 @@ h1, h2, h3, .font-display {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: url('/images/home-paperflow.png') right center / 850px auto no-repeat;
+  background: url('/images/home-paperflow.webp') right center / 850px auto no-repeat;
 }
 .home-difference-art { opacity: 0.13; filter: saturate(1.12); }
 .home-difference {
@@ -376,7 +376,7 @@ h1, h2, h3, .font-display {
 .home-diff-card-violet { border-left-color: #8a5eb6; }
 .home-saathi-art {
   opacity: 0.18;
-  background-image: url('/images/home-voice-waves.png');
+  background-image: url('/images/home-voice-waves.webp');
   background-position: center;
   background-size: cover;
 }
@@ -443,7 +443,7 @@ h1, h2, h3, .font-display {
   background-image:
     linear-gradient(90deg, rgba(3,43,51,0.93) 0%, rgba(4,64,76,0.86) 50%, rgba(4,64,76,0.45) 100%),
     radial-gradient(520px 230px at 84% 4%, rgba(9,133,133,0.48), transparent 66%),
-    url('/images/home-guided-route.png');
+    url('/images/home-guided-route.webp');
   background-position: center, center, right center;
   background-size: cover, cover, cover;
 }
@@ -466,7 +466,7 @@ h1, h2, h3, .font-display {
     min-height: 300px;
     background-image:
       linear-gradient(90deg, rgba(3,43,51,0.98) 0%, rgba(4,64,76,0.85) 100%),
-      url('/images/home-paperflow.png');
+      url('/images/home-paperflow.webp');
     background-position: center, 76% center;
     background-size: cover, auto 120%;
   }
