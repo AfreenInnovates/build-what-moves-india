@@ -280,7 +280,6 @@ Copy `.env.example` to `.env` and provide the Neon `DATABASE_URL`, `GROQ_API_KEY
 | `npm test` | Run unit tests |
 | `npm run db:seed` | Seed six demo members |
 | `npm run db:migrate` | Apply migrations |
-| `npm run db:dump` | Inspect database contents |
 | `npm run fixtures:build` | Regenerate synthetic documents |
 | `npm run spine` | Print each member's gate spine |
 

@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "node scripts/seed.mjs",
-    "db:inspect": "node scripts/db-inspect.mjs",
     "fixtures:build": "node fixtures/build.mjs",
     "fixtures:degrade": "node fixtures/build.mjs --degrade",
     "ocr:probe": "node scripts/ocr-probe.mjs",
@@ -16,8 +15,6 @@
     "test:watch": "vitest",
     "spine": "tsx scripts/spine.ts",
     "spec:publish": "tsx scripts/publish-spec.mts",
-    "db:dump": "node scripts/db-dump.mjs",
-    "db:clear": "node scripts/db-clear-cases.mjs",
     "fixtures:make": "node scripts/make-fixtures.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "check:responsive": "node scripts/responsive.mjs"

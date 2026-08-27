@@ -24,6 +24,9 @@ const csp = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // Keep local development from creating framework-generated agent files.
+  agentRules: false,
+
   // the dev badge sits over the UI; off so screen recordings are clean
   devIndicators: false,
 

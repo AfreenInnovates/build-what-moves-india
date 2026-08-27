@@ -7,6 +7,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { LoginMenu } from './LoginMenu';
 import { getLang, translator } from '@/lib/i18n';
 import { BackToCases } from './BackToCases';
+import { MobileNav } from './MobileNav';
 
 /** Highlighted phrase. Used sparingly - if everything is highlighted, nothing is. */
 export function Hl({
@@ -44,18 +45,18 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="flex min-w-0 cursor-pointer items-center gap-1 sm:gap-1.5">
-          <LanguageSwitcher current={lang} />
+          <div className="hidden lg:block"><LanguageSwitcher current={lang} /></div>
           <Link
             href="/whats-mocked"
             title={t("What's real and what's mocked")}
-            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 lg:inline-flex lg:px-3.5 lg:text-[15px]"
           >
             {t("What's real and what's mocked")}
           </Link>
           <Link
             href="/technology"
             title={t('How Seven Gates is built')}
-            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 lg:inline-flex lg:px-3.5 lg:text-[15px]"
           >
             {t('Technology')}
           </Link>
@@ -68,7 +69,7 @@ export async function SiteHeader() {
               <Link
                 href="/compare"
                 title={t('See what EPFO does today and what we changed, with sources')}
-                className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+                className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 lg:inline-flex lg:px-3.5 lg:text-[15px]"
               >
                 {t('EPFO vs us')}
               </Link>
@@ -79,7 +80,7 @@ export async function SiteHeader() {
               <Link
                 href="/compare"
                 title={t('See what EPFO does today and what we changed, with sources')}
-                className="hidden rounded-sm px-3.5 py-2 text-[15px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex"
+                className="hidden rounded-sm px-3.5 py-2 text-[15px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 lg:inline-flex"
               >
                 {t('EPFO vs us')}
               </Link>
@@ -96,6 +97,23 @@ export async function SiteHeader() {
               />
             </>
           )}
+          <MobileNav
+            current={lang}
+            signedIn={signedIn}
+            caseName={c?.member.display_name}
+            labels={Object.fromEntries(
+              [
+                'Close menu',
+                'Open menu',
+                'Explore',
+                "What's real and what's mocked",
+                'Technology',
+                'EPFO vs us',
+                'View open cases',
+                'Log in',
+              ].map((k) => [k, t(k)]),
+            )}
+          />
         </nav>
       </div>
     </header>

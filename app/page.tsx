@@ -117,7 +117,7 @@ export default async function Home() {
               href="https://buildwhatmovesindia.com/"
               target="_blank"
               rel="noreferrer"
-              className="font-semibold underline hover:text-teal-700"
+              className="inline-flex min-h-[24px] items-center font-semibold underline hover:text-teal-700"
             >
               {t('About the hackathon')}
             </a>
