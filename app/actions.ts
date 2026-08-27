@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { startCase, applyFix, createOwnProfile, resetAllCases, loadCase } from '@/lib/case';
+import { startCase, applyFix, createOwnProfile, resetAllCases, loadCase, submitMockClaim } from '@/lib/case';
 import type { GateId } from '@/lib/gates/types';
 import {
   employerFromToken,
@@ -150,4 +150,11 @@ export async function resetAllExamples() {
   await resetAllCases();
   revalidatePath('/', 'layout');
   redirect('/login?reset=1');
+}
+
+export async function submitMockClaimAction() {
+  const caseId = await currentCaseId();
+  if (!caseId) redirect('/login');
+  await submitMockClaim(caseId);
+  revalidatePath('/dashboard', 'layout');
 }

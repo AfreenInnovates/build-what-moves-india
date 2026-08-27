@@ -28,6 +28,8 @@ Seven Gates is a pre-flight check:
 
 The product is diagnosis-first. It does not pretend to file a real claim. It helps a member reach the point where filing on EPFO's own portal is less likely to fail for a problem they could have found earlier.
 
+When all seven checks are clear, the dashboard now offers a **mock claim hand-off**. The member can submit it, receive a demo reference, and see that submission saved against their case. This models the final product step without claiming to file with EPFO or move money. The existing reset action clears the mocked submission as well as the cleared gates, returning the demo member to its original state.
+
 ## Design choices
 
 ### Product choices
@@ -268,3 +270,7 @@ Copy `.env.example` to `.env` and provide the Neon `DATABASE_URL`, `GROQ_API_KEY
 ## Scope and status
 
 Seven Gates is a working demonstration of the product idea and its core technical approach. It does not file claims, authenticate Aadhaar, contact EPFO, send SMS, verify bank accounts, or use real member documents. That boundary is intentional: the prototype demonstrates how to find and explain blockers without pretending to be a government service.
+
+## License
+
+No open-source license has been declared yet. The repository is public so the hackathon work can be inspected, but public visibility does not automatically grant permission to copy, modify, or redistribute the code or generated assets. A specific license should be added as a `LICENSE` file before the project is shared for reuse.

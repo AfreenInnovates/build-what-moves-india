@@ -5,6 +5,9 @@ await c.connect();
 await c.query(`alter table members add column if not exists slug text`);
 await c.query(`alter table members add column if not exists headline text`);
 await c.query(`alter table members add column if not exists documents jsonb`);
+await c.query(`alter table cases add column if not exists claim_status text not null default 'not_submitted'`);
+await c.query(`alter table cases add column if not exists claim_reference text`);
+await c.query(`alter table cases add column if not exists claim_submitted_at timestamptz`);
 
 await c.query(`update members set slug = lower(split_part(display_name,' ',1)) where slug is null`);
 await c.query(`create unique index if not exists members_slug_idx on members(slug)`);

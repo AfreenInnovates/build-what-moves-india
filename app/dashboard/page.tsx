@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { loadCase } from '@/lib/case';
-import { currentCaseId } from '@/app/actions';
+import { currentCaseId, submitMockClaimAction } from '@/app/actions';
 import { Countdown } from '@/components/Countdown';
 import { ButtonLink } from '@/components/ui';
 import { AlertCard } from '@/components/panels';
@@ -163,6 +163,31 @@ export default async function DashboardPage() {
               ))}
             </ul>
           </section>
+
+          {pre.ready && (
+            <section className="rounded-md border-2 border-go/30 bg-go-soft p-5">
+              <div className="flex items-start gap-3">
+                <Icon name="check" size={22} className="mt-0.5 shrink-0 text-go" aria-hidden />
+                <div className="flex-1">
+                  <h2 className="text-[19px] font-bold text-ink-900">
+                    {c.claimStatus === 'submitted' ? t('Mock claim submitted') : t('Ready to claim')}
+                  </h2>
+                  {c.claimStatus === 'submitted' ? (
+                    <p className="mt-1.5 text-[15px] leading-relaxed text-ink-800">
+                      {t('Your mocked claim was recorded for this demo. Reference')}: <span className="font-mono font-bold">{c.claimReference}</span>
+                    </p>
+                  ) : (
+                    <>
+                      <p className="mt-1.5 text-[15px] leading-relaxed text-ink-800">{t('All checks are clear. This is a simulated hand-off - nothing is sent to EPFO.')}</p>
+                      <form action={submitMockClaimAction} className="mt-4">
+                        <button type="submit" className="rounded-md bg-go px-5 py-2.5 text-[14px] font-bold text-white hover:bg-go/90">{t('Submit mocked claim')}</button>
+                      </form>
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* alerts summary */}
           {attention.length > 0 && (

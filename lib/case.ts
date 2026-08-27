@@ -33,6 +33,9 @@ export interface CaseView {
   documents: Record<string, DocumentValues>;
   service: ServiceRow[];
   history: CaseEvent[];
+  claimStatus: 'not_submitted' | 'submitted';
+  claimReference: string | null;
+  claimSubmittedAt: string | null;
 }
 
 export interface DocumentValues {
@@ -252,8 +255,11 @@ export const loadCase = cache(async (caseId: string): Promise<CaseView | null> =
     member: MemberRow;
     service: ServiceRow[];
     history: CaseEvent[];
+    claim_status: 'not_submitted' | 'submitted' | null;
+    claim_reference: string | null;
+    claim_submitted_at: string | null;
   }>(
-    `select c.facts,
+    `select c.facts, c.claim_status, c.claim_reference, c.claim_submitted_at,
             to_jsonb(m.*) as member,
             coalesce((
               select json_agg(json_build_object(
@@ -293,6 +299,9 @@ export const loadCase = cache(async (caseId: string): Promise<CaseView | null> =
     documents: documentsFor(row.member.slug, (row.member as { documents?: unknown }).documents),
     service: row.service ?? [],
     history,
+    claimStatus: row.claim_status ?? 'not_submitted',
+    claimReference: row.claim_reference ?? null,
+    claimSubmittedAt: row.claim_submitted_at ?? null,
   };
 });
 
@@ -330,6 +339,29 @@ export async function applyFix(caseId: string, gateId: GateId): Promise<void> {
       after.totalDays,
     ],
   );
+}
+
+/** Record the final step in the demo: a mocked hand-off to EPFO's claim form. */
+export async function submitMockClaim(caseId: string): Promise<string | null> {
+  const row = await one<{ facts: CaseFacts; claim_status: string }>(
+    `select facts, claim_status from cases where id = $1`,
+    [caseId],
+  );
+  if (!row || row.claim_status === 'submitted') return null;
+  const resolution = resolve(SPEC, row.facts);
+  if (resolution.gates.some((g) => g.status === 'red' || g.status === 'blocked')) return null;
+
+  const reference = `SG-${randomUUID().slice(0, 8).toUpperCase()}`;
+  await query(
+    `update cases set claim_status = 'submitted', claim_reference = $1,
+       claim_submitted_at = now(), updated_at = now() where id = $2`,
+    [reference, caseId],
+  );
+  await query(
+    `insert into events (case_id, type, payload, days_remaining) values ($1,$2,$3,$4)`,
+    [caseId, 'mock_claim_submitted', { reference }, resolution.totalDays],
+  );
+  return reference;
 }
 
 
@@ -372,7 +404,8 @@ export async function resetAllCases(): Promise<number> {
   const ids = payload.map((p) => p.case_id);
 
   await query(
-    `update cases c set facts = x.facts, updated_at = now()
+    `update cases c set facts = x.facts, claim_status = 'not_submitted',
+       claim_reference = null, claim_submitted_at = null, updated_at = now()
        from jsonb_to_recordset($1::jsonb) as x(case_id uuid, facts jsonb)
       where c.id = x.case_id`,
     [JSON.stringify(payload.map((p) => ({ case_id: p.case_id, facts: p.facts })))],
@@ -418,7 +451,7 @@ export async function resetCase(caseId: string): Promise<void> {
     intakeFor(member.slug),
   );
 
-  await query(`update cases set facts = $1, updated_at = now() where id = $2`, [facts, caseId]);
+  await query(`update cases set facts = $1, claim_status = 'not_submitted', claim_reference = null, claim_submitted_at = null, updated_at = now() where id = $2`, [facts, caseId]);
   await query(`delete from events where case_id = $1`, [caseId]);
   await persistGateStates(caseId, resolve(SPEC, facts));
   await query(`insert into events (case_id, type, payload, days_remaining) values ($1,$2,$3,$4)`, [

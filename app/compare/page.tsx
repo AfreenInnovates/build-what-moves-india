@@ -121,6 +121,13 @@ export default async function ComparePage() {
         </div>
       </section>
 
+      <section className="mt-12 rounded-lg border-2 border-go/30 bg-go-soft p-6">
+        <h2 className="text-[20px] font-bold tracking-tight text-ink-900">{t('Ready to claim?')}</h2>
+        <p className="mt-2 max-w-[70ch] text-[15.5px] leading-relaxed text-ink-800">
+          {t('Once all seven checks are clear, the dashboard lets you submit a mocked claim hand-off. It records a demo reference and updates that case in the database, but it never contacts EPFO or moves money. Resetting the example clears this submission too.')}
+        </p>
+      </section>
+
       <section className="mt-12 rounded-lg border-2 border-ink-100 bg-white p-6">
         <h2 className="text-[20px] font-bold tracking-tight text-ink-900">
           {t('If you think something here is wrong')}

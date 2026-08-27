@@ -19,6 +19,7 @@ const ROWS = [
   ['Employer portal and the shared link', 'Rebuilt here', 'Members cannot see the real employer portal, so we built what the task needs instead: a queue of requests waiting on one establishment. The link is signed and carries no case identifier. Approving a request updates the member’s case here. Nothing reaches a real employer or EPFO record.'],
   ['EPFO APIs', 'Mocked', 'There is no public API for any of this. Nothing in this project makes a request to an EPFO system.'],
   ['Filing a claim, and settlement', 'Not built', 'You cannot file from here, by design. Seven Gates stops at the moment before filing: when you do file on EPFO’s own portal, none of the seven things that get claims refused are still wrong.'],
+  ['Mock claim hand-off', 'Rebuilt here', 'When every gate is clear, you can submit a simulated claim. We save a demo reference and timestamp on this case so the result survives refreshes. Nothing is sent to EPFO, and reset returns the case to its starting state.'],
   ['Aadhaar / UIDAI verification', 'Mocked', 'No Aadhaar authentication of any kind. No real Aadhaar number exists anywhere in this project; every one is deliberately invalid and masked on screen.'],
   ['Bank account verification', 'Mocked', 'No penny-drop, no IFSC lookup. The IFSC codes here belong to no bank.'],
   ['Sign-up, captcha and OTP', 'Mocked', 'No SMS is sent. The OTP is fixed and printed on screen. Demo accounts carry their password on the card.'],
