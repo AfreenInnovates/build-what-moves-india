@@ -166,6 +166,18 @@ flowchart TB
 
 The resolver is pure: facts go in and an ordered resolution comes out. It performs no I/O and uses a topological sort plus a critical-path calculation. This makes the result deterministic, inspectable, and independent of any language model.
 
+### AI-assisted development and generated assets
+
+This project was built with OpenAI Codex using GPT-5.6 Luna and GPT-5.6 Terra at medium reasoning effort. 
+
+Generated visual assets are kept in the repository so they are inspectable and versioned:
+
+- [Seven Gates logo](public/seven-gates-logo.png) used in the navbar and browser icon.
+- [App icon](app/icon.png) and [favicon](app/favicon.ico) derived from the same logo asset.
+- [Home page paper-flow artwork](public/images/home-paperflow.webp).
+- [Home page voice-wave artwork](public/images/home-voice-waves.webp).
+- [Home page guided-route artwork](public/images/home-guided-route.webp).
+
 ## Security approach
 
 Security is handled at several boundaries:
