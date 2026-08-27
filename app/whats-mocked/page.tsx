@@ -13,7 +13,7 @@ const TONE: Record<string, string> = {
 };
 
 const ROWS = [
-  ['DigiLocker', 'Rebuilt here', 'A working rebuild with synthetic documents. The consent screen, issuers, fetch and returned fields follow the real shape, and the signature is an HMAC with a demo key — not a government certificate chain. It is not DigiLocker, is not connected to DigiLocker, and no document it returns exists outside this project.'],
+  ['DigiLocker', 'Rebuilt here', 'A working stand-in with made-up documents. The screens and returned fields follow the real flow. It uses a demo HMAC key, not a government certificate. It is not connected to DigiLocker.'],
   ['UMANG face authentication', 'Rebuilt here', 'The activation flow is rebuilt so the step can be finished rather than described. No camera is used, no face is captured, and nothing is matched against Aadhaar.'],
   ['EPFO member portal screens', 'Rebuilt here', 'Field for field, label for label, from the real portal. Every substituted field carries a note. Pressing submit updates your case in our database and nothing else.'],
   ['Employer portal and the shared link', 'Rebuilt here', 'Members cannot see the real employer portal, so we built what the task needs instead: a queue of requests waiting on one establishment. The link is signed and carries no case identifier. Approving a request updates the member’s case here. Nothing reaches a real employer or EPFO record.'],
@@ -32,6 +32,14 @@ const ROWS = [
   ['Rate limiting', 'Real', 'Genuinely enforced, but held in memory, so it resets on deployment and is not shared across serverless instances. Adequate for a demo, not production.'],
 ] as const;
 
+const TECHNOLOGY = [
+  ['A small, boring stack that stays understandable', 'Next.js and TypeScript keep the interface, routes and server actions in one strongly typed codebase. Tailwind gives us a consistent, responsive UI without a separate design system to keep in sync.'],
+  ['A real backend boundary', 'Postgres is the source of truth for cases, progress and chat history. Server-side cookies scope every case lookup, and the assistant API validates input, limits requests and never trusts a client-provided case id.'],
+  ['Rules, not model guesses', 'The seven-gate resolver is a pure, unit-tested function: facts go in and an ordered critical path comes out. That makes the core result deterministic, inspectable and safe to improve independently of the language model.'],
+  ['Proof of concept, ready to grow', 'Today this is a focused hackathon deployment with a small connection pool and in-memory rate limits. For real traffic we would move limits to shared storage, put Postgres behind a managed pooler, add queues for slow work, cache public configuration, and scale stateless Next.js instances horizontally.'],
+  ['Designed for the next order of magnitude', 'The app already keeps business logic in data modules, isolates third-party calls behind API routes, and avoids putting secrets or personal case data in the browser. Those seams let us add observability, retries, background jobs and regional capacity without rewriting the product.'],
+] as const;
+
 const SOURCES = [
   ['About a quarter of claims refused — 26% in FY 2023-24', 'Factly / Dataful’s analysis of EPFO claim data. Their five-year average is close to 27%; this is the broad measure across every claim type.'],
   ['Final settlements specifically: from about 13% to about 34%', 'An Indian Express analysis of EPFO data covering FY 2017-18 to FY 2022-23. This narrower measure counts final settlement after leaving a job.'],
@@ -47,20 +55,22 @@ export default async function WhatsMockedPage() {
     <main className="mx-auto w-full max-w-[1000px] px-5 pb-28 pt-12">
       <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">{t('Transparency')}</p>
       <h1 className="mt-2 max-w-[22ch] text-[36px] leading-[1.1] font-bold tracking-tight text-ink-900">{t("What's real and what's mocked")}</h1>
-      <p className="mt-5 max-w-[72ch] text-[17px] leading-relaxed text-ink-700">{t('This page is linked from every other page rather than buried at the bottom of one, because a tool that talks about identity documents and provident fund money should be unambiguous about what it touches and what it only pretends to. Everything below is either something we genuinely built, something we rebuilt as a working stand-in, or something we did not build at all — and it says which.')}</p>
+      <p className="mt-5 max-w-[72ch] text-[17px] leading-relaxed text-ink-700">{t('This page tells you, in plain words, what Seven Gates really does. Some parts are real code, some are working stand-ins, and some are not built. Each section tells you which.')}</p>
 
       <div className="mt-8 rounded-lg border-2 border-teal-100 bg-teal-50 p-5">
         <h2 className="text-[18px] font-bold text-teal-900">{t('You never have to upload anything')}</h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-teal-900">{t('There is no file upload in Seven Gates. Documents arrive through the rebuilt DigiLocker, already structured, which means nothing has to be read off a photograph and no document of yours ever leaves your own device. That was a deliberate choice, and the reason for it is at the bottom of this page.')}</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-teal-900">{t('There is no file upload in Seven Gates. Documents arrive as structured fields through our DigiLocker stand-in. Nothing is read from a photo, and your documents never leave your device.')}</p>
       </div>
 
-      <section className="mt-10 overflow-hidden rounded-lg border border-ink-100">
-        {ROWS.map(([thing, state, detail], i) => <article key={thing} className={`grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-start ${i ? 'border-t border-ink-100' : ''}`}><div><h2 className="text-[16px] font-bold text-ink-900">{t(thing)}</h2><p className="mt-1 text-[15px] leading-relaxed text-ink-700">{t(detail)}</p></div><span className={`justify-self-start rounded-full px-3 py-1 text-[12px] font-bold sm:justify-self-end ${TONE[state]}`}>{t(state)}</span></article>)}
-      </section>
+      {(['Rebuilt here', 'Real', 'Mocked', 'Synthetic', 'Estimated', 'Not built'] as const).map((state) => {
+        const rows = ROWS.filter((row) => row[1] === state);
+        if (!rows.length) return null;
+        return <section key={state} className="mt-10 overflow-hidden rounded-lg border border-ink-100"><div className="border-b border-ink-100 bg-ink-50 px-5 py-3"><h2 className="text-[20px] font-bold text-ink-900">{t(state)}</h2></div>{rows.map(([thing, , detail], i) => <article key={thing} className={`grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-start ${i ? 'border-t border-ink-100' : ''}`}><div><h3 className="text-[16px] font-bold text-ink-900">{t(thing)}</h3><p className="mt-1 text-[15px] leading-relaxed text-ink-700">{t(detail)}</p></div><span className={`justify-self-start rounded-full px-3 py-1 text-[12px] font-bold sm:justify-self-end ${TONE[state]}`}>{t(state)}</span></article>)}</section>;
+      })}
 
       <section className="mt-14"><h2 className="text-[26px] font-bold tracking-tight text-ink-900">{t('Where the numbers come from')}</h2><div className="mt-5 space-y-3">{SOURCES.map(([title, detail]) => <article key={title} className="rounded-lg border border-ink-100 bg-white p-5"><h3 className="text-[16px] font-bold text-ink-900">{t(title)}</h3><p className="mt-1.5 text-[15px] leading-relaxed text-ink-700">{t(detail)}</p></article>)}</div></section>
 
-      <section className="mt-14 space-y-5"><h2 className="text-[26px] font-bold tracking-tight text-ink-900">{t('Limitations worth naming')}</h2>{[['Reading Indic scripts is not reliable enough to trust silently', 'In our own testing, a vision model read a Kannada passbook name as a different surname entirely while reading the account number perfectly. That is why documents now arrive through DigiLocker as structured fields, and why image text must be confirmed before comparison.'], ['A demo is not a deployment', 'Six members, one database, no real load. Rate limiting resets on deploy. Nothing here has been tested against the scale and inconsistency of real government systems.'], ['We are not EPFO, and this is not advice', 'An independent prototype built for a hackathon. Not affiliated with, endorsed by, or connected to EPFO or any government body. Check EPFO’s own portal before you act.']].map(([title, detail]) => <article key={title} className="rounded-lg border-l-4 border-teal-700 bg-teal-50 px-5 py-4"><h3 className="text-[17px] font-bold text-teal-900">{t(title)}</h3><p className="mt-1.5 text-[15px] leading-relaxed text-teal-900">{t(detail)}</p></article>)}</section>
+      <section className="mt-14"><h2 className="text-[26px] font-bold tracking-tight text-ink-900">{t('How we built it')}</h2><p className="mt-3 max-w-[70ch] text-[16px] leading-relaxed text-ink-700">{t('This is a proof of concept, but it is built around production-shaped boundaries: deterministic rules, a real database, server-side protection and stateless web routes.')}</p><div className="mt-5 grid gap-3 sm:grid-cols-2">{TECHNOLOGY.map(([title, detail]) => <article key={title} className="rounded-lg border border-ink-100 bg-white p-5"><h3 className="text-[17px] font-bold text-ink-900">{t(title)}</h3><p className="mt-1.5 text-[15px] leading-relaxed text-ink-700">{t(detail)}</p></article>)}</div></section>
 
       <section className="mt-14 rounded-lg border border-ink-100 bg-white p-6"><h2 className="text-[20px] font-bold text-ink-900">{t("EPFO's side of it")}</h2><p className="mt-2 text-[15px] leading-relaxed text-ink-700">{t('EPFO points to 5.08 crore claims settled in FY 2024-25, an auto-settlement route that now covers claims up to Rs 5 lakh, and refusal rates it says are falling. That is the baseline this product measures against — not a claim that EPFO is standing still.')}</p><p className="mt-5 border-t border-ink-100 pt-5 text-[15px] leading-relaxed text-ink-700">{t('Everything said here about EPFO’s screens, labels and links was seen by browsing the public portal by hand, in an ordinary browser session. No automated access, scripted requests, load testing, or live claim was involved.')}</p></section>
 

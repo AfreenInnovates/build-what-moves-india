@@ -48,20 +48,27 @@ export async function SiteHeader() {
           <Link
             href="/whats-mocked"
             title={t("What's real and what's mocked")}
-            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-ink-50 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex sm:px-3.5 sm:text-[15px]"
           >
             {t("What's real and what's mocked")}
           </Link>
+          <Link
+            href="/technology"
+            title={t('How Seven Gates is built')}
+            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+          >
+            {t('Technology')}
+          </Link>
           {signedIn ? (
             <>
-              <BackToCases className="whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-ink-50 disabled:opacity-60 sm:px-3.5 sm:text-[15px]">
+              <BackToCases className="whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 disabled:opacity-60 sm:px-3.5 sm:text-[15px]">
                 <span className="sm:hidden">{t('Cases')}</span>
                 <span className="hidden sm:inline">{t('View open cases')}</span>
               </BackToCases>
               <Link
                 href="/compare"
                 title={t('See what EPFO does today and what we changed, with sources')}
-                className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-ink-50 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+                className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex sm:px-3.5 sm:text-[15px]"
               >
                 {t('EPFO vs us')}
               </Link>
@@ -72,7 +79,7 @@ export async function SiteHeader() {
               <Link
                 href="/compare"
                 title={t('See what EPFO does today and what we changed, with sources')}
-                className="hidden rounded-sm px-3.5 py-2 text-[15px] text-ink-700 transition hover:bg-ink-50 sm:inline-flex"
+                className="hidden rounded-sm px-3.5 py-2 text-[15px] text-ink-700 transition hover:bg-teal-50 hover:text-teal-700 sm:inline-flex"
               >
                 {t('EPFO vs us')}
               </Link>
