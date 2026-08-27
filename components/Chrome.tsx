@@ -43,7 +43,7 @@ export async function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="flex min-w-0 items-center gap-1 sm:gap-1.5">
+        <nav className="flex min-w-0 cursor-pointer items-center gap-1 sm:gap-1.5">
           <LanguageSwitcher current={lang} />
           <Link
             href="/whats-mocked"

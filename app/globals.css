@@ -75,8 +75,21 @@ html {
 
 body {
   color: var(--color-ink-900);
+  font-size: 17px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   font-synthesis-weight: none;
+}
+
+/* Keep controls comfortable to read when a component does not set its own size. */
+button, input, select, textarea {
+  font: inherit;
+}
+
+/* The transparency and engineering pages are reading-heavy; keep body copy
+   comfortably legible while preserving their explicit heading sizes. */
+.readable-page :where(p, li, td, th) {
+  font-size: max(16px, 1em);
 }
 
 h1, h2, h3, .font-display {

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 const SECTIONS: { icon: IconName; title: string; body: string }[] = [
   { icon: 'route', title: 'Next.js + TypeScript', body: 'The pages, server routes and actions live together in one strongly typed app. That keeps the distance between a screen and the code behind it small and easy to review.' },
-  { icon: 'money', title: 'Postgres as the source of truth', body: 'Cases, progress, employer requests and chat history are stored in Postgres. A refresh does not lose work, and the data model can move behind a managed pooler as traffic grows.' },
+  { icon: 'money', title: 'Neon Postgres as the source of truth', body: 'Cases, progress, employer requests and chat history are stored in Neon Postgres. A refresh does not lose work, and the data model can use managed pooling as traffic grows.' },
   { icon: 'gates', title: 'Modular domain code', body: 'The gate specification, predicates, resolver, language layer and portal screens are separate modules. A rule change is a data change, and the pure resolver can be tested without a browser or database.' },
   { icon: 'shield', title: 'Security at the boundary', body: 'Case IDs come from an httpOnly, same-site cookie, never from a request body. Server routes validate input, cap message size, use parameterised SQL and keep API keys on the server.' },
   { icon: 'key', title: 'Signed employer links', body: 'Employer links use an HMAC and timing-safe comparison. They carry no case ID, so forwarding a link does not expose a member’s private record.' },
@@ -18,7 +18,7 @@ const SECTIONS: { icon: IconName; title: string; body: string }[] = [
 export default async function TechnologyPage() {
   const t = await getT();
   return (
-    <main className="mx-auto w-full max-w-[1000px] px-5 pb-28 pt-12">
+    <main className="readable-page mx-auto w-full max-w-[1000px] px-5 pb-28 pt-12">
       <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">{t('Engineering')}</p>
       <h1 className="mt-2 max-w-[18ch] text-[36px] leading-[1.1] font-bold tracking-tight text-ink-900">{t('How Seven Gates is built')}</h1>
       <p className="mt-5 max-w-[72ch] text-[17px] leading-relaxed text-ink-700">{t('Seven Gates is a hackathon proof of concept, but the important parts are built like a real product: clear boundaries, secure defaults, small modules and rules you can inspect.')}</p>

@@ -34,7 +34,7 @@ const ROWS = [
 
 const TECHNOLOGY = [
   ['A small, boring stack that stays understandable', 'Next.js and TypeScript keep the interface, routes and server actions in one strongly typed codebase. Tailwind gives us a consistent, responsive UI without a separate design system to keep in sync.'],
-  ['A real backend boundary', 'Postgres is the source of truth for cases, progress and chat history. Server-side cookies scope every case lookup, and the assistant API validates input, limits requests and never trusts a client-provided case id.'],
+  ['A real backend boundary', 'Neon Postgres is the source of truth for cases, progress and chat history. Server-side cookies scope every case lookup, and the assistant API validates input, limits requests and never trusts a client-provided case id.'],
   ['Rules, not model guesses', 'The seven-gate resolver is a pure, unit-tested function: facts go in and an ordered critical path comes out. That makes the core result deterministic, inspectable and safe to improve independently of the language model.'],
   ['Proof of concept, ready to grow', 'Today this is a focused hackathon deployment with a small connection pool and in-memory rate limits. For real traffic we would move limits to shared storage, put Postgres behind a managed pooler, add queues for slow work, cache public configuration, and scale stateless Next.js instances horizontally.'],
   ['Designed for the next order of magnitude', 'The app already keeps business logic in data modules, isolates third-party calls behind API routes, and avoids putting secrets or personal case data in the browser. Those seams let us add observability, retries, background jobs and regional capacity without rewriting the product.'],
@@ -52,7 +52,7 @@ const SOURCES = [
 export default async function WhatsMockedPage() {
   const t = await getT();
   return (
-    <main className="mx-auto w-full max-w-[1000px] px-5 pb-28 pt-12">
+    <main className="readable-page mx-auto w-full max-w-[1000px] px-5 pb-28 pt-12">
       <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">{t('Transparency')}</p>
       <h1 className="mt-2 max-w-[22ch] text-[36px] leading-[1.1] font-bold tracking-tight text-ink-900">{t("What's real and what's mocked")}</h1>
       <p className="mt-5 max-w-[72ch] text-[17px] leading-relaxed text-ink-700">{t('This page tells you, in plain words, what Seven Gates really does. Some parts are real code, some are working stand-ins, and some are not built. Each section tells you which.')}</p>
