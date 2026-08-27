@@ -9,7 +9,6 @@ const TONE: Record<string, string> = {
   Mocked: 'bg-ink-50 text-ink-500',
   Synthetic: 'bg-ink-50 text-ink-500',
   Estimated: 'bg-wait-soft text-wait',
-  'Not built': 'bg-ink-50 text-ink-500',
 };
 
 const ROWS = [
@@ -18,8 +17,7 @@ const ROWS = [
   ['EPFO member portal screens', 'Rebuilt here', 'Field for field, label for label, from the real portal. Every substituted field carries a note. Pressing submit updates your case in our database and nothing else.'],
   ['Employer portal and the shared link', 'Rebuilt here', 'Members cannot see the real employer portal, so we built what the task needs instead: a queue of requests waiting on one establishment. The link is signed and carries no case identifier. Approving a request updates the member’s case here. Nothing reaches a real employer or EPFO record.'],
   ['EPFO APIs', 'Mocked', 'There is no public API for any of this. Nothing in this project makes a request to an EPFO system.'],
-  ['Filing a claim, and settlement', 'Not built', 'You cannot file from here, by design. Seven Gates stops at the moment before filing: when you do file on EPFO’s own portal, none of the seven things that get claims refused are still wrong.'],
-  ['Mock claim hand-off', 'Rebuilt here', 'When every gate is clear, you can submit a simulated claim. We save a demo reference and timestamp on this case so the result survives refreshes. Nothing is sent to EPFO, and reset returns the case to its starting state.'],
+  ['Filing a claim, and settlement', 'Rebuilt here', 'When every gate is clear you can submit a simulated claim, and we save a demo reference and timestamp so the result survives a refresh. Nothing is sent to EPFO — there is no API to send it to, and inventing a settlement would tell you nothing true. Seven Gates deliberately stops at the hand-off: the point is that when you file on EPFO’s own portal, none of the seven things that get claims refused are still wrong. Reset returns the case to its starting state.'],
   ['Aadhaar / UIDAI verification', 'Mocked', 'No Aadhaar authentication of any kind. No real Aadhaar number exists anywhere in this project; every one is deliberately invalid and masked on screen.'],
   ['Bank account verification', 'Mocked', 'No penny-drop, no IFSC lookup. The IFSC codes here belong to no bank.'],
   ['Sign-up, captcha and OTP', 'Mocked', 'No SMS is sent. The OTP is fixed and printed on screen. Demo accounts carry their password on the card.'],
@@ -56,14 +54,14 @@ export default async function WhatsMockedPage() {
     <main className="readable-page mx-auto w-full max-w-[1000px] px-5 pb-28 pt-12">
       <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-teal-600">{t('Transparency')}</p>
       <h1 className="mt-2 max-w-[22ch] text-[36px] leading-[1.1] font-bold tracking-tight text-ink-900">{t("What's real and what's mocked")}</h1>
-      <p className="mt-5 max-w-[72ch] text-[17px] leading-relaxed text-ink-700">{t('This page tells you, in plain words, what Seven Gates really does. Some parts are real code, some are working stand-ins, and some are not built. Each section tells you which.')}</p>
+      <p className="mt-5 max-w-[72ch] text-[17px] leading-relaxed text-ink-700">{t('This page tells you, in plain words, what Seven Gates really does. Some parts are real code and some are working stand-ins. Each section tells you which.')}</p>
 
       <div className="mt-8 rounded-lg border-2 border-teal-100 bg-teal-50 p-5">
         <h2 className="text-[18px] font-bold text-teal-900">{t('You never have to upload anything')}</h2>
         <p className="mt-2 text-[15px] leading-relaxed text-teal-900">{t('There is no file upload in Seven Gates. Documents arrive as structured fields through our DigiLocker stand-in. Nothing is read from a photo, and your documents never leave your device.')}</p>
       </div>
 
-      {(['Rebuilt here', 'Real', 'Mocked', 'Synthetic', 'Estimated', 'Not built'] as const).map((state) => {
+      {(['Rebuilt here', 'Real', 'Mocked', 'Synthetic', 'Estimated'] as const).map((state) => {
         const rows = ROWS.filter((row) => row[1] === state);
         if (!rows.length) return null;
         return <section key={state} className="mt-10 overflow-hidden rounded-lg border border-ink-100"><div className="border-b border-ink-100 bg-ink-50 px-5 py-3"><h2 className="text-[20px] font-bold text-ink-900">{t(state)}</h2></div>{rows.map(([thing, , detail], i) => <article key={thing} className={`grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-start ${i ? 'border-t border-ink-100' : ''}`}><div><h3 className="text-[16px] font-bold text-ink-900">{t(thing)}</h3><p className="mt-1 text-[15px] leading-relaxed text-ink-700">{t(detail)}</p></div><span className={`justify-self-start rounded-full px-3 py-1 text-[12px] font-bold sm:justify-self-end ${TONE[state]}`}>{t(state)}</span></article>)}</section>;

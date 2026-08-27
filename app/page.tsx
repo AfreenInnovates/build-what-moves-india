@@ -204,7 +204,7 @@ export default async function Home() {
               */}
               <dl className="mt-4 space-y-2 border-t border-ink-100 pt-4">
                 {[
-                  ['1 in 5', t('claims came back refused last year')],
+                  ['1 in 4', t('claims came back refused in 2023-24')],
                   ['16 lakh', t('complaints filed in a single year')],
                   ['7', t('things must all be right before you are paid')],
                 ].map(([n, what]) => (

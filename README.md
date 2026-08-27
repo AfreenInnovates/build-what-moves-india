@@ -15,6 +15,10 @@ An EPF claim can fail because one person is written differently on different rec
 
 This is both a technical and a communication problem. People need to know which record differs, who can change it, whether another fix depends on it, and what to do next.
 
+<p align="center"><img src="public/images/readme-gates-overview.png" alt="Seven Gates product flow: records move through seven checks to a clear next step" width="620" /></p>
+
+The illustration above is a visual summary of the product: scattered records enter a sequence of checks, the right person is brought into the route when needed, and the member reaches a clear hand-off instead of a mysterious rejection.
+
 ## The solution
 
 Seven Gates is a pre-flight check:
@@ -34,6 +38,10 @@ When all seven checks are clear, the dashboard now offers a **mock claim hand-of
 
 ### Product choices
 
+<p align="center"><img src="public/images/readme-product-choices.png" alt="Product design decision cycle: person first, plain language, one route, next action, and trust" width="520" /></p>
+
+The product decisions follow a simple cycle: start with the person using the service, reduce language and navigation effort, make the next action obvious, and earn trust through accessible feedback. The written choices below explain how that cycle appears in the product.
+
 - **Plain language before portal language.** People are dealing with their savings, often on a small phone. We use short explanations, visible next actions, and a clear actor: you, your employer, or EPFO.
 - **One connected route.** The real process is split across sites. The dashboard puts the seven checks, their dependencies, and the day estimate in one place.
 - **A small visual system.** Teal anchors the product in a public-service context without pretending to be an official government site. Accent colours separate progress, waiting, and action. Cards and spacing keep dense information readable.
@@ -43,6 +51,10 @@ When all seven checks are clear, the dashboard now offers a **mock claim hand-of
 **Future product choices:** Keep the first screen calm with progressive disclosure, add stronger keyboard navigation and larger touch targets, support low-bandwidth use, and provide downloadable check summaries that a member can share with an employer without sharing the whole case.
 
 ### Technology choices
+
+<p align="center"><img src="public/images/readme-technology-choices.png" alt="Technology decision flow: typed app, server-rendered pages, modular domain code, deterministic rules, Neon Postgres, security, and a path to scale" width="460" /></p>
+
+The technology choices move from the outer interface toward durable, testable foundations. Each layer creates a boundary that can be measured and replaced independently as the proof of concept grows.
 
 - **Next.js and TypeScript.** One strongly typed codebase keeps pages, server routes, and actions close together and easy to review.
 - **Neon Postgres.** A durable database makes cases and progress survive refreshes and returning visits.
@@ -172,6 +184,8 @@ The resolver is pure: facts go in and an ordered resolution comes out. It perfor
 
 This project was built with OpenAI Codex using GPT-5.6 Luna and GPT-5.6 Terra at medium reasoning effort. 
 
+For the decisions behind the implementation and the one model correction we caught during review, see the [build log](docs/BUILD-LOG.md).
+
 Generated visual assets are kept in the repository so they are inspectable and versioned:
 
 - [Seven Gates logo](public/seven-gates-logo.png) used in the navbar and browser icon.
@@ -179,6 +193,9 @@ Generated visual assets are kept in the repository so they are inspectable and v
 - [Home page paper-flow artwork](public/images/home-paperflow.webp).
 - [Home page voice-wave artwork](public/images/home-voice-waves.webp).
 - [Home page guided-route artwork](public/images/home-guided-route.webp).
+- [README product-choice cycle](public/images/readme-product-choices.png).
+- [README technology-choice flow](public/images/readme-technology-choices.png).
+- [README product-flow overview](public/images/readme-gates-overview.png).
 
 ## Security approach
 
