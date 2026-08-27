@@ -273,4 +273,4 @@ Seven Gates is a working demonstration of the product idea and its core technica
 
 ## License
 
-No open-source license has been declared yet. The repository is public so the hackathon work can be inspected, but public visibility does not automatically grant permission to copy, modify, or redistribute the code or generated assets. A specific license should be added as a `LICENSE` file before the project is shared for reuse.
+Seven Gates is released under the [MIT License](LICENSE). You may use, copy, modify, and redistribute the project, provided the copyright and license notice are retained. The software is provided without warranty.
