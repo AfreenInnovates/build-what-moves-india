@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { cookies } from 'next/headers';
 import { loadCase } from '@/lib/case';
 import { LeaveCase } from './LeaveCase';
@@ -36,10 +37,7 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-2 px-3 py-4 sm:px-5">
         <Link href="/" className="-my-1 flex min-h-[44px] shrink-0 items-center gap-2 py-1 sm:gap-2.5">
-          <svg width="23" height="23" viewBox="0 0 20 20" aria-hidden>
-            <circle cx="10" cy="10" r="7" fill="none" stroke="var(--color-teal-700)" strokeWidth="2" />
-            <path d="M10 3a7 7 0 0 1 0 14z" fill="var(--color-teal-700)" />
-          </svg>
+          <Image src="/seven-gates-logo.png" width={28} height={28} alt="" aria-hidden="true" priority />
           <span className="hidden text-[17px] font-bold tracking-tight text-ink-900 sm:inline">
             {t('Seven Gates')}
           </span>
@@ -47,6 +45,13 @@ export async function SiteHeader() {
 
         <nav className="flex min-w-0 items-center gap-1 sm:gap-1.5">
           <LanguageSwitcher current={lang} />
+          <Link
+            href="/whats-mocked"
+            title={t("What's real and what's mocked")}
+            className="hidden whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-ink-50 sm:inline-flex sm:px-3.5 sm:text-[15px]"
+          >
+            {t("What's real and what's mocked")}
+          </Link>
           {signedIn ? (
             <>
               <BackToCases className="whitespace-nowrap rounded-sm px-2.5 py-2 text-[14px] text-ink-700 transition hover:bg-ink-50 disabled:opacity-60 sm:px-3.5 sm:text-[15px]">
@@ -109,9 +114,12 @@ export async function SiteFooter() {
           </a>
           .{' '}
           <Link href="/compare" className="inline-flex min-h-[24px] items-center underline hover:text-teal-600">
-            {t('See how this compares with EPFO, with sources')}
+            {t('What we checked about EPFO')}
           </Link>
-          .
+          .{' '}
+          <Link href="/whats-mocked" className="inline-flex min-h-[24px] items-center underline hover:text-teal-600">
+            {t("What's real and what's mocked")}
+          </Link>.
         </p>
       </div>
     </footer>

@@ -19,7 +19,7 @@ const HOSTS = [
 const STATS = [
   { value: 32.56, decimals: 2, suffix: ' cr', label: 'members', sub: 'as of 31 Mar 2024' },
   { value: 5.08, decimals: 2, suffix: ' cr', label: 'claims settled', sub: 'FY 2024-25' },
-  { value: 22, decimals: 0, prefix: '~', suffix: '%', label: 'claims rejected', sub: 'FY 2024-25' },
+  { value: 26, decimals: 0, prefix: '~', suffix: '%', label: 'claims rejected', sub: 'FY 2023-24' },
   { value: 8.25, decimals: 2, suffix: '%', label: 'annual interest', sub: 'FY 2024-25' },
 ] as const;
 
@@ -139,7 +139,7 @@ export default async function Home() {
               <span className="text-teal-700">{t('without the guesswork')}</span>.
             </h1>
             <p className="mt-6 max-w-[51ch] text-[17px] leading-relaxed text-ink-700 sm:text-[18px]">
-              {t('Find out what is holding your money before you file, not after you are rejected. EPFO turned down about 22 per cent of claims in 2024-25 - roughly one in five - usually because your details disagree across records that were never built to match. This finds every problem in one look.')}
+              {t('Find out what is holding your money before you file, not after you are rejected. EPFO turned down about 26 per cent of claims in 2023-24 - roughly one in four - usually because your details disagree across records that were never built to match. This finds every problem in one look.')}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link

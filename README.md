@@ -2,7 +2,7 @@
 
 Find out what is blocking an EPF withdrawal **before** filing, not after being rejected.
 
-EPFO settles over five crore claims a year and rejects roughly one in five, most often
+EPFO settles over five crore claims a year and rejected about 26% in FY 2023-24, most often
 because a name is spelled differently across records that were never built to match.
 This puts all seven blocking conditions on one page, in dependency order, and says who
 has to act on each one — you, your employer, or EPFO.
