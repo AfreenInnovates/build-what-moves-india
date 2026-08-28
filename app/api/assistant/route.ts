@@ -132,7 +132,6 @@ Marathi, Tamil, Telugu, Kannada, Bengali, Gujarati, Punjabi and Malayalam are al
 typed in Latin letters. "kya ho raha hai" is Hindi and must be answered in Hindi, in
 Devanagari. Work out what they actually spoke and answer in that.`
 }
-Report what you chose in a "lang" field, as one of: ${Object.keys(LANGUAGE_NAME).join(', ')}.
 If they switch language mid-conversation, switch with them. The language of THIS message wins,
 never the language of the ones before it.
 Gate names are printed on their screen in English. Keep the name in English so they can find
@@ -238,7 +237,10 @@ Reply with the answer itself. No JSON, no quotes around it, no preamble.`;
         model: process.env.GROQ_MODEL_REASONING,
         temperature: 0.3,
         max_tokens: 500,
-        response_format: { type: 'json_object' },
+        // Ordinary Saathi replies are streamed as prose. Requiring JSON here
+        // conflicts with the prompt's "No JSON" instruction and makes Groq
+        // reject an otherwise valid reply during schema validation.
+        stream: true,
         messages: [
           { role: 'system', content: system },
           ...history,
