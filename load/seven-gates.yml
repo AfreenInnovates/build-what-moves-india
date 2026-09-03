@@ -1,0 +1,51 @@
+# Load test for Seven Gates - ONE local instance.
+#
+# Read this before running it. Two hazards, both real:
+#
+#  1. Run it against a LOCAL PRODUCTION BUILD, never `npm run dev`. The dev server
+#     is a single unoptimised process and refuses connections almost immediately -
+#     you measure Turbopack, not the app.
+#
+#         npm run build && npm start        # terminal 1, serves :3000
+#         npm run loadtest                  # terminal 2
+#
+#  2. Your local build talks to the SAME Neon database as the live deployment.
+#     /login reads members from it on every hit, so a heavy run pounds the
+#     production database and can take the live demo offline. That is why the ramp
+#     below is deliberately modest - it finds the shape of one instance's limit
+#     without a denial-of-service on your own shared DB. Do not crank arrivalRate
+#     into the hundreds against a shared database.
+#
+# A single local Node instance serving server-rendered, DB-backed pages handles
+# tens of requests a second, not thousands. The numbers this produces are for one
+# box; the scaling plan on /technology is about getting past one box.
+
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - name: warm-up
+      duration: 10
+      arrivalRate: 2
+    # Climb gently from 3 to 25 new arrivals/sec over a minute. Enough to watch
+    # p95 rise and find where one instance starts to bend, without flooding Neon.
+    - name: ramp
+      duration: 60
+      arrivalRate: 3
+      rampTo: 25
+  ensure:
+    thresholds:
+      - http.response_time.p95: 800 # ms - one instance, DB-backed SSR
+    conditions:
+      - expression: http.codes.200 > 0
+
+scenarios:
+  # Land, then reach the demo sign-in. /login is the heavy page - it reads every
+  # member from Neon and runs the resolver per card, so it stresses the real
+  # database-plus-engine path, which is what binds before the pure engine does.
+  - name: 'Browse to the demo sign-in'
+    flow:
+      - get:
+          url: '/'
+      - think: 2
+      - get:
+          url: '/login'

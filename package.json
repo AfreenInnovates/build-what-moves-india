@@ -17,7 +17,9 @@
     "spec:publish": "tsx scripts/publish-spec.mts",
     "fixtures:make": "node scripts/make-fixtures.mjs",
     "db:migrate": "node scripts/migrate.mjs",
-    "check:responsive": "node scripts/responsive.mjs"
+    "check:responsive": "node scripts/responsive.mjs",
+    "bench": "tsx scripts/bench.ts",
+    "loadtest": "npx --yes artillery@latest run load/seven-gates.yml"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

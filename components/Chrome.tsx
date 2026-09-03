@@ -74,6 +74,25 @@ export async function SiteHeader() {
                 {t('EPFO vs us')}
               </Link>
               <LeaveCase name={c!.member.display_name} />
+              {/*
+                Kept visible while signed in as well.
+
+                It is the doorway to the other six cases and to the employer
+                side, and hiding it once a case is open meant the one control
+                that explains the two-sided model disappeared the moment anyone
+                started looking around.
+              */}
+              <LoginMenu
+                labels={Object.fromEntries(
+                  [
+                    'Log in',
+                    'Employee',
+                    'Get your own PF money out',
+                    'Employer',
+                    'Act on requests from former staff',
+                  ].map((k) => [k, t(k)]),
+                )}
+              />
             </>
           ) : (
             <>

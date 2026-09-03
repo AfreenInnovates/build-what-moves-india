@@ -2,9 +2,10 @@ import { redirect } from 'next/navigation';
 import { loadCase } from '@/lib/case';
 import { currentCaseId } from '@/app/actions';
 import { getT } from '@/lib/i18n';
-import { fill, monthsInWords } from '@/lib/insights';
+import { fill, monthsInWords, inr } from '@/lib/insights';
 import { PageHead, StatTile } from '@/components/panels';
 import { pension, monthsToYM } from '@/lib/insights';
+import { pensionConsequence } from '@/lib/pension';
 
 export default async function PensionPage() {
   const caseId = await currentCaseId();
@@ -14,6 +15,7 @@ export default async function PensionPage() {
   const t = await getT();
 
   const p = pension(c);
+  const pc = pensionConsequence(c);
   const pct = Math.min(100, Math.round((p.serviceMonths / 120) * 100));
 
   return (
@@ -72,6 +74,87 @@ export default async function PensionPage() {
                 )}
               </>
             )}
+          </p>
+        </section>
+
+        {/*
+          What withdrawing costs, in a number.
+
+          The progress bar above says where they sit. This says what it is worth -
+          a monthly pension for life against a one-time payment - because that is
+          the decision the portal never frames and no checklist can compute.
+        */}
+        <section className="rounded-md border-2 border-signal/30 bg-white p-5" data-tour="pension-sim">
+          <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-signal">
+            {t('Should you withdraw at all?')}
+          </p>
+
+          {pc.verdict === 'merge_first' ? (
+            <>
+              <p className="mt-2 text-[16px] leading-relaxed text-ink-900">
+                {fill(
+                  t(
+                    'You have worked {worked}, but only {credited} is credited - the rest is stranded under a second account. That gap is what keeps you under ten years.',
+                  ),
+                  { worked: monthsToYM(pc.workedMonths), credited: monthsToYM(pc.creditedMonths) },
+                )}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-sm bg-stop-soft px-4 py-3.5">
+                  <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-stop">
+                    {t('Withdraw today')}
+                  </p>
+                  <p className="mt-1 text-[15px] leading-snug text-ink-800">
+                    {t('A one-time payment, and no pension - ever. The clock resets to zero.')}
+                  </p>
+                </div>
+                <div className="rounded-sm bg-go-soft px-4 py-3.5">
+                  <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-go">
+                    {t('Merge the account first')}
+                  </p>
+                  <p className="mt-1 text-[15px] leading-snug text-ink-800">
+                    {fill(t('You cross ten years - about {amount} a month, for the rest of your life.'), {
+                      amount: inr(pc.monthlyPensionIfMerged),
+                    })}
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : pc.verdict === 'already_pension' ? (
+            <p className="mt-2 text-[16px] leading-relaxed text-ink-900">
+              {fill(
+                t(
+                  'You have passed ten years, so your EPS is a pension - about {amount} a month for life from 58, at the wage cap. Your EPF savings are a separate pot; withdrawing them does not touch this.',
+                ),
+                { amount: inr(pc.monthlyPensionNow) },
+              )}
+            </p>
+          ) : pc.verdict === 'withdraw_costs_pension' ? (
+            <p className="mt-2 text-[16px] leading-relaxed text-ink-900">
+              {fill(
+                t(
+                  'You are {span} short of ten years. Keep contributing and it becomes a monthly pension for life - roughly {amount} a month if you reach 58 at the wage cap. Withdraw now and that resets to zero.',
+                ),
+                {
+                  span: monthsInWords(pc.monthsToThreshold, t),
+                  amount: inr(pc.monthlyPensionAt58 ?? 0),
+                },
+              )}
+            </p>
+          ) : (
+            <p className="mt-2 text-[16px] leading-relaxed text-ink-900">
+              {fill(
+                t(
+                  'You are {span} from ten years of service. Your EPF savings are yours to withdraw; the EPS pension only begins once you cross that line.',
+                ),
+                { span: monthsInWords(pc.monthsToThreshold, t) },
+              )}
+            </p>
+          )}
+
+          <p className="mt-4 border-t border-ink-100 pt-3 text-[12.5px] leading-relaxed text-ink-500">
+            {t('Source')}: {t(pc.formula.source)} · {t('published')} · {t('checked')}{' '}
+            {pc.formula.sourcedAt}. {t('The monthly figure assumes the wage cap and, where it looks ahead, that you keep contributing to 58 - it is an estimate, not a guarantee. This is not financial advice.')}
           </p>
         </section>
 

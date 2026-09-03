@@ -84,6 +84,28 @@ export function scriptLanguage(text: string): Spoken | null {
   return null;
 }
 
+/**
+ * Telltale words of an Indian language typed in Latin letters.
+ *
+ * Latin text is treated as English UNLESS it carries one of these markers. That
+ * default matters: it is why "will I get my pension" is answered in English
+ * instead of being guessed into Kannada. A romanised Hindi or Tamil message
+ * ("mera paisa kab milega", "en panam enge") trips a marker and is handed to the
+ * model to place among the Indian languages. The list does not need to be
+ * exhaustive - a miss falls back to English, which is the safe direction to fail.
+ */
+const ROMANISED_INDIC =
+  /\b(kya|kyu|kyun|kyunki|hai|hain|tha|thi|the|kaise|kaisa|kaisi|kaha|kahan|kab|kaun|kitna|kitne|kitni|mera|meri|mere|mujhe|hume|humein|apna|apni|paisa|paise|nahi|nahin|batao|bataiye|bataye|samjhao|samjha|dikhao|dikhaye|chahiye|kaam|hua|hoga|hogi|milega|milegi|karo|kare|karna|karke|raha|rahi|rahe|gaya|gayi|panam|enge|epdi|eppadi|enna|kaasu|kitta)\b/i;
+
+/**
+ * Is this Latin message actually an Indian language, not English?
+ *
+ * Only meaningful for Latin text - call it after scriptLanguage returns null.
+ */
+export function romanisedIndic(text: string): boolean {
+  return ROMANISED_INDIC.test(text);
+}
+
 /** The script each language is written in. Marathi borrows Devanagari from Hindi. */
 const RANGE: Partial<Record<Spoken, RegExp>> = {
   ...Object.fromEntries(SCRIPTS.map(([re, lang]) => [lang, re])),

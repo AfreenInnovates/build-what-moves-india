@@ -57,4 +57,16 @@ export const SECTIONS: Section[] = [
     label: 'Alerts',
     blurb: 'Everything that needs you to decide something, with the ones costing you the most time first.',
   },
+  {
+    href: '/dashboard/grievance',
+    icon: 'shield',
+    label: 'If it is stuck anyway',
+    blurb: 'When your record is fine and the claim still does not move: the grievance, appeal and RTI ladder, with the words written for you.',
+  },
+  {
+    href: '/dashboard/handout',
+    icon: 'records',
+    label: 'Printable Summary',
+    blurb: 'One page to print or save, and hand to your old employer or take to an EPFO office.',
+  },
 ];

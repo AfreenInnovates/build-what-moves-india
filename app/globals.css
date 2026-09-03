@@ -522,3 +522,70 @@ h1, h2, h3, .font-display {
     animation: shine 4.5s ease-in-out infinite;
   }
 }
+
+/* --------------------------------------------------------------- print --
+   The handout at /dashboard/handout is meant to leave the screen: a member's
+   real next step is often a conversation with an old employer's HR desk or a
+   counter at a facilitation centre, and they need something to put on it.
+
+   No PDF library - the browser's own dialog saves to PDF on every platform,
+   including the Android phones this audience actually uses. All this needs is
+   for the app to get out of the way. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  /* the fixed background gradient prints as a grey wash and drains a cartridge */
+  html {
+    background: #fff !important;
+  }
+
+  body {
+    background: #fff !important;
+    font-size: 11.5pt;
+    line-height: 1.45;
+  }
+
+  /* site chrome, the sidebar, and any floating widget (the assistant, toasts) */
+  nav,
+  aside,
+  header.site-header,
+  footer.site-footer,
+  .fixed,
+  .sticky {
+    display: none !important;
+  }
+
+  /* the sidebar's grid column collapses with it */
+  .handout {
+    box-shadow: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* a check and its route note must not be split across two sheets */
+  tr,
+  li,
+  section {
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* colour survives, because status is the whole point of the page */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}

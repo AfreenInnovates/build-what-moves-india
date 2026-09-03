@@ -19,6 +19,7 @@ const SCENARIO: Record<string, PickerCard['scenario']> = {
   rejected: { label: 'Claim rejected', tone: 'error' },
   ready: { label: 'Ready to file', tone: 'success' },
   advance: { label: 'Advance, still employed', tone: 'warning' },
+  stuck: { label: 'Filed, then silence', tone: 'warning' },
 };
 
 export default async function LoginPage({
@@ -50,8 +51,11 @@ export default async function LoginPage({
       // cleared the card was still saying "Claim rejected" next to a day count of
       // 3, which is the fully-cleared baseline - the tag contradicting the number
       // printed beside it. What the card shows now is where they actually stand.
+      // ...with one exception: a stuck claim has no blockers left by design, so
+      // the blocking count says "ready" while the member is in fact waiting on a
+      // grievance. The scenario wins there.
       scenario:
-        r.blockingCount === 0
+        r.blockingCount === 0 && m.scenario !== 'stuck'
           ? { label: 'Ready to file', tone: 'success' as const }
           : (SCENARIO[m.scenario] ?? { label: m.scenario, tone: 'warning' as const }),
     };

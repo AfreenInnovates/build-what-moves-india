@@ -45,6 +45,20 @@ const ALL_LITERALS = [
   'lib/processes.ts',
   'lib/sections.ts',
   'lib/epfo-screens.ts',
+  // the escalation ladder and the one-line notes above each draft. The draft
+  // bodies themselves are interpolated template literals, which the scanner
+  // skips - and should, because a grievance letter is filed in English.
+  'lib/escalation.ts',
+  'lib/drafts.ts',
+  // the pension/TDS/passbook module: its provenance source sentences and rule
+  // text are rendered through t() on the money and pension pages, so they need
+  // to be in the dictionary like every other visible string.
+  'lib/pension.ts',
+  // the transparency page keeps its copy in ROWS/SOURCES/TECHNOLOGY tuples and
+  // renders them through t(), so the call site has a variable rather than a
+  // literal and the walk below never saw any of it. The whole page rendered in
+  // English no matter which language was selected.
+  'app/whats-mocked/page.tsx',
 ];
 
 const out = new Set();
@@ -131,8 +145,14 @@ for (const [file, keys] of LISTS) {
 for (const file of ALL_LITERALS) {
   for (const v of literals(fs.readFileSync(file, 'utf8'))) {
     // module paths, gate ids, actor names, confidence levels: not copy
-    if (v.includes('/') || /^[a-z][a-zA-Z_]*$/.test(v)) continue;
+    // A slash means "module path" only when there are no spaces - a real
+    // sentence ("Form 15G/15H", "Rs 1,250/month") has spaces and must be kept,
+    // or its translation silently goes missing.
+    if ((v.includes('/') && !v.includes(' ')) || /^[a-z][a-zA-Z_]*$/.test(v)) continue;
     if (/^[a-z_]+$/.test(v)) continue;
+    // snake_case / lowercase identifiers with digits and no spaces are code
+    // (gate ids, enum values like "exempt_15g"), never copy.
+    if (!v.includes(' ') && /^[a-z0-9_]+$/.test(v)) continue;
     if (!v.includes(' ') && v.length < 6) continue;
     out.add(v);
   }
@@ -159,6 +179,13 @@ function walk(dir) {
       // at the end.
       let at = -1;
       while ((at = src.indexOf('t(', at + 1)) !== -1) {
+        // ...but only where `t` is the whole identifier. Without this check the
+        // scan also fires on the tail of sort(, print(, filter( and format(,
+        // then reads whatever literal happens to come next - which is how
+        // "blocked", "red" and a page's worth of Tailwind class names ended up
+        // in the dictionary as strings for a translator to work on.
+        const before = src[at - 1];
+        if (before && /[A-Za-z0-9_$.]/.test(before)) continue;
         const [first] = literals(src.slice(at, at + 4000));
         if (first && first.trim()) out.add(first.trim());
       }
@@ -178,6 +205,17 @@ const list = [...out]
   // ...but a string may legitimately START with a placeholder - "{n} of your
   // details do not match" - so those are kept
   .filter((s) => /^\{\w+\}/.test(s) || !/^[:{},.]/.test(s))
+  // Route paths and hrefs. Never copy, and a translated one is a broken link.
+  .filter((s) => !/^\//.test(s))
+  // Tailwind class lists, which reach here whenever a className sits next to a
+  // call the scan above mistook for the translator. Nothing to translate, and
+  // they bulk out the file a human has to review.
+  .filter(
+    (s) =>
+      !/(^|\s)(mt|mb|ml|mr|mx|my|px|py|pt|pb|pl|pr|text|bg|border|rounded|flex|grid|gap|w|h|min|max|font|leading|tracking|shadow|ring|hover|focus|print|sm|md|lg|xl|inline|absolute|relative|space|divide|items|justify|shrink|grow|truncate|tabular|overflow|top|left|right|bottom|z|opacity|transition|cursor|whitespace|scroll)[-:][a-z0-9[\]/.-]/.test(
+        s,
+      ),
+  )
   .sort();
 
 fs.writeFileSync('lib/i18n/strings.json', JSON.stringify(list, null, 2) + '\n');

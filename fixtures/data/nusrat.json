@@ -1,0 +1,69 @@
+{
+  "member": {
+    "uan": "100200300407",
+    "demo_password": "demo1234",
+    "display_name": "Nusrat Fernandes",
+    "scenario": "stuck",
+    "epfo_name": "NUSRAT FERNANDES",
+    "epfo_dob": "1986-07-19",
+    "epfo_father_name": "ANTHONY FERNANDES",
+    "date_of_joining": "2012-08-01",
+    "date_of_exit": "2026-04-30",
+    "employer_name": "Konkan Marine Services Pvt Ltd",
+    "employer_responsive": true,
+    "eps_service_months": 164,
+    "balance_paise": 97600000,
+    "uan_active": true,
+    "e_nomination_filed": true,
+    "aadhaar_linked": true,
+    "headline": "Every check is clean. The claim was filed, and nothing has happened since"
+  },
+  "documents": {
+    "aadhaar": {
+      "script": "latin",
+      "name": "NUSRAT FERNANDES",
+      "dob": "1986-07-19",
+      "father_name": "ANTHONY FERNANDES",
+      "id_number": "0923 4471 9082",
+      "gender": "FEMALE",
+      "address": "12 Harbour View, Vasco da Gama 403802"
+    },
+    "pan": {
+      "script": "latin",
+      "name": "NUSRAT FERNANDES",
+      "dob": "1986-07-19",
+      "father_name": "ANTHONY FERNANDES",
+      "id_number": "ZZZZZ4444Z"
+    },
+    "bank": {
+      "script": "devanagari",
+      "name": "NUSRAT FERNANDES",
+      "name_native": "नुसरत फर्नांडिस",
+      "bank_name": "Demo Bank of India",
+      "bank_name_native": "डेमो बैंक ऑफ इंडिया",
+      "branch_native": "वास्को शाखा",
+      "account_number": "0000 4412 8890",
+      "ifsc": "DEMO0000004"
+    },
+    "epfo": {
+      "script": "latin",
+      "name": "NUSRAT FERNANDES",
+      "dob": "1986-07-19",
+      "father_name": "ANTHONY FERNANDES",
+      "id_number": "100200300407"
+    }
+  },
+  "service_history": [
+    {
+      "uan": "100200300407",
+      "employer_name": "Konkan Marine Services Pvt Ltd",
+      "from_date": "2012-08-01",
+      "to_date": "2026-04-30",
+      "eps_months": 164
+    }
+  ],
+  "intake": {
+    "formSelected": true,
+    "form15gAttached": true
+  }
+}

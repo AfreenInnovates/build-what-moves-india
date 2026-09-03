@@ -4,10 +4,13 @@ import { loadCase } from '@/lib/case';
 import { query } from '@/lib/db';
 import { withinLimit, tooLarge, readJson } from '@/lib/guard';
 import { PROCESSES } from '@/lib/processes';
+import { money } from '@/lib/insights';
+import { pensionConsequence, passbookBreakdown, withdrawalTds } from '@/lib/pension';
 import { EPFO_SCREENS } from '@/lib/epfo-screens';
 import { defaultTour, tourTarget } from '@/lib/tour';
 import {
   scriptLanguage,
+  romanisedIndic,
   wantsTour,
   LANGUAGE_NAME,
   type Spoken,
@@ -48,20 +51,30 @@ export async function POST(req: Request) {
   const history = past.reverse();
 
   const { resolution: r, member } = c;
+  const pc = pensionConsequence(c);
+  const pb = passbookBreakdown(c);
+  const tds = withdrawalTds(c);
 
-  // Script settles the language on its own; a model does not get a vote on
-  // whether Devanagari is Hindi. Latin text is left to the model, which is the
-  // only one of us that can tell "kya ho raha hai" from "what is going on".
+  // The language of THIS message, settled here rather than by the model.
+  //
+  // A non-Latin script decides itself - Devanagari is Hindi, no vote. Latin text
+  // is English by default and only counts as an Indian language when it carries a
+  // romanised marker; that default is what stops a plain English question being
+  // answered in Kannada. When it IS romanised-Indian we cannot tell which one
+  // from letters alone, so that single case is left to the model.
   const scripted = scriptLanguage(message);
+  const detected: Spoken | null = scripted ?? (romanisedIndic(message) ? null : 'en-IN');
   const asksForTour = wantsTour(message);
 
   const gateLines = r.gates
     .map((g) => {
       const p = PROCESSES[g.id];
       const s = EPFO_SCREENS[g.id];
+      // Deliberately no raw gate id here. When the id was in the context the
+      // model would echo "exit_marked" into its reply despite being told to use
+      // the title - the surest fix is to not show it the id at all.
       return [
-        `- id: ${g.id}`,
-        `  title: ${g.title}`,
+        `- ${g.title}`,
         `  status: ${g.status}`,
         `  blocks: ${g.blocks}`,
         g.route ? `  fix: ${g.route.label}` : null,
@@ -98,7 +111,26 @@ UAN: ${member.uan}
 Employer: ${member.employer_name}
 Working days until their money is expected to arrive: ${r.totalDays}
 Gates currently blocking them: ${r.blockingCount} of ${r.gates.length}
-The single thing they should start today: ${r.startToday ?? 'nothing, they are clear to file'}
+The single thing they should start today: ${r.gates.find((g) => g.id === r.startToday)?.title ?? 'nothing, they are clear to file'}
+
+THEIR MONEY AND PENSION (use these exact figures - never compute your own)
+EPF balance, withdrawable, in the passbook: Rs ${money(c).balance.toLocaleString('en-IN')}
+EPS pension pot, separate, NOT withdrawable as a lump sum: about Rs ${pb.epsPotEstimate.toLocaleString('en-IN')} (estimate at the wage cap)
+Why the passbook can look smaller than a salary slip: up to Rs ${pb.monthlyEpsDiversion.toLocaleString('en-IN')}/month of the employer share goes to EPS, which is a pension and not a growing balance.
+Interest: declared once a year, credited in one pass backdated to 31 March; a late passbook entry loses nothing.
+Pensionable service credited: ${pc.creditedMonths} months. Ten-year line for a lifelong pension: ${pc.crossedTenYears ? 'already crossed' : `${pc.monthsToThreshold} months away`}.
+${pc.verdict === 'merge_first' ? `They have ${pc.recoverableMonths} months stranded under a second UAN; merging it crosses ten years and unlocks about Rs ${pc.monthlyPensionIfMerged.toLocaleString('en-IN')}/month for life.` : ''}
+${pc.crossedTenYears ? `Their EPS is a pension of about Rs ${pc.monthlyPensionNow.toLocaleString('en-IN')}/month from 58.` : ''}
+Tax on withdrawing now: ${
+    tds.reason === 'will_be_cut'
+      ? `about Rs ${tds.tdsAmount.toLocaleString('en-IN')} (${tds.ratePct}% TDS) would be cut, leaving about Rs ${tds.netIfWithdrawNow.toLocaleString('en-IN')}, because they are under five years of continuous service. Filing Form 15G or waiting until five years avoids it.`
+      : tds.reason === 'exempt_five_years'
+        ? 'none - they are past five years of continuous service, so the full balance is paid.'
+        : tds.reason === 'exempt_15g'
+          ? 'none - Form 15G is on file.'
+          : 'none - the balance is below the Rs 50,000 threshold.'
+  }
+If they ask whether to withdraw: below ten years withdrawing forfeits the pension entitlement; do not give financial advice, state the rule and the numbers above and let them decide.
 
 THEIR GATES
 ${gateLines}
@@ -119,21 +151,21 @@ HOW TO TALK
 - Punctuate with plain hyphens. Never use an em dash or an en dash; the rest of the site
   does not use them and your replies sit right beside its text.
 
-LANGUAGE - THIS MATTERS MORE THAN ANYTHING ELSE HERE
-Answer in the SAME language the person just wrote in, in the SAME script.
+LANGUAGE - THE MOST IMPORTANT RULE ON THIS PAGE
+Reply in the language of THIS latest message, and nothing else decides it - not the
+language of earlier messages, not your own earlier replies, not the site menu. If the
+person changes language from one message to the next, change with them every single time.
+An English question gets an English answer; a Kannada question gets a Kannada answer.
 ${
-  scripted
-    ? `They wrote in ${LANGUAGE_NAME[scripted]}. Your entire reply, and every line of any
-tour, must be in ${LANGUAGE_NAME[scripted]}, written in its own script. Do not answer in
-English. Do not translate their question back to them. English technical terms that have
-no everyday equivalent - UAN, Aadhaar, PAN, EPFO, KYC, e-Nomination - stay as they are.`
-    : `They wrote in the Latin alphabet, but that does not mean they wrote English. Hindi,
-Marathi, Tamil, Telugu, Kannada, Bengali, Gujarati, Punjabi and Malayalam are all commonly
-typed in Latin letters. "kya ho raha hai" is Hindi and must be answered in Hindi, in
-Devanagari. Work out what they actually spoke and answer in that.`
+  detected
+    ? `This message is in ${LANGUAGE_NAME[detected]}. Write your WHOLE reply, and every line
+of any tour, in ${LANGUAGE_NAME[detected]} and in its own script - no other language. Keep
+only these terms as they are, because they are printed in English on their screen: UAN,
+Aadhaar, PAN, EPFO, KYC, e-Nomination.`
+    : `This message is an Indian language typed in Latin letters - it is NOT English.
+"kya ho raha hai" is Hindi; "en panam enge" is Tamil. Work out which Indian language it is
+and write your whole reply in that language, in its own script.`
 }
-If they switch language mid-conversation, switch with them. The language of THIS message wins,
-never the language of the ones before it.
 Gate names are printed on their screen in English. Keep the name in English so they can find
 the row you mean, and put everything you say around it in their own language.
 Write numbers as digits - 15, not fifteen, and never in Kannada, Devanagari or Tamil numerals.
@@ -146,7 +178,7 @@ Reply with the answer itself. No JSON, no quotes around it, no preamble.`;
   // smaller model answers this task just as accurately - the facts come from
   // the case, not from the model's own knowledge - and three seconds of silence
   // before the voice starts is the difference between helpful and broken.
-  const lang: Spoken = scripted ?? 'en-IN';
+  const lang: Spoken = detected ?? 'en-IN';
 
   /** Attach the page and selector each stop needs, so the client can go there. */
   const locate = (steps: { target: string; say: string }[]) =>
@@ -285,7 +317,7 @@ Reply with the answer itself. No JSON, no quotes around it, no preamble.`;
    * Everything the model can no longer be trusted to format (the tour, the
    * language, the dash rules) is handled around it.
    */
-  const replyLang: Spoken = scripted ?? 'en-IN';
+  const replyLang: Spoken = detected ?? 'en-IN';
   const encoder = new TextEncoder();
   let full = '';
 

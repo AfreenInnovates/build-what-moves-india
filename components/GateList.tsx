@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Icon } from './Icon';
 import type { GateId, GateStatus, ResolvedGate } from '@/lib/gates/types';
+import type { ScheduleBar } from '@/lib/schedule';
 import { PROCESSES } from '@/lib/processes';
+import { fill } from '@/lib/insights';
 import { WhyThisNumber } from './WhyThisNumber';
 
 const ACTOR_LABEL = {
@@ -12,7 +14,16 @@ const ACTOR_LABEL = {
 
 type T = (s: string) => string;
 
-export function GateList({ gates, t }: { gates: ResolvedGate[]; t?: T }) {
+export function GateList({
+  gates,
+  t,
+  timing,
+}: {
+  gates: ResolvedGate[];
+  t?: T;
+  /** where each gate sits on the schedule, from lib/schedule */
+  timing?: Map<GateId, ScheduleBar>;
+}) {
   const tr = t ?? ((s: string) => s);
   const delay = (i: number) => `rise rise-${Math.min(i + 1, 5)}`;
   const titleOf = (id: GateId) => tr(gates.find((g) => g.id === id)?.title ?? id);
@@ -21,7 +32,7 @@ export function GateList({ gates, t }: { gates: ResolvedGate[]; t?: T }) {
     <ol className="space-y-2">
       {gates.map((g, i) => (
         <div key={g.id} className={delay(i)}>
-          <GateRow gate={g} titleOf={titleOf} t={tr} />
+          <GateRow gate={g} titleOf={titleOf} t={tr} bar={timing?.get(g.id)} />
         </div>
       ))}
     </ol>
@@ -32,10 +43,12 @@ function GateRow({
   gate,
   titleOf,
   t,
+  bar,
 }: {
   gate: ResolvedGate;
   titleOf: (id: GateId) => string;
   t: T;
+  bar?: ScheduleBar;
 }) {
   const actionable = gate.status === 'red' || gate.status === 'blocked';
   const waitingOn = gate.dependsOn.map(titleOf);
@@ -70,7 +83,7 @@ function GateRow({
           {(gate.status === 'green' || gate.status === 'not_applicable') && (
             <div className="mt-0.5 flex flex-wrap items-center gap-3">
               <p className={`text-[13px] ${gate.status === 'green' ? 'text-go' : 'text-ink-400'}`}>
-                {gate.status === 'green' ? 'Cleared' : 'Does not apply to you'}
+                {gate.status === 'green' ? t('Cleared') : t('Does not apply to you')}
               </p>
               <Link
                 href={`/dashboard/fix/${gate.id}`}
@@ -87,19 +100,67 @@ function GateRow({
 
               <div className="mt-2.5 rounded-sm bg-ink-50 px-3 py-2.5">
                 <p className="text-[15px] leading-snug text-ink-900">{t(gate.route!.label)}</p>
+                {/*
+                  One sentence, one dictionary entry.
+
+                  This used to be glued together from t('about'), the number and
+                  t('working') + t('days'). English survives that; Kannada does
+                  not - "about" is a postposition there, so the parts came back
+                  correct individually and the line read as nonsense. A whole
+                  sentence with a {n} slot is the only version a translator can
+                  actually put in the right order.
+                */}
                 <p className="mt-1 text-[13.5px] text-ink-500">
                   {t(ACTOR_LABEL[gate.actor!])} ·{' '}
                   {gate.route!.latencyDays === 0
                     ? t('takes a minute')
-                    : `${t('about')} ${gate.route!.latencyDays} ${t('working')} ${
-                        gate.route!.latencyDays === 1 ? t('day') : t('days')
-                      }`}
+                    : fill(
+                        gate.route!.latencyDays === 1
+                          ? t('about {n} working day')
+                          : t('about {n} working days'),
+                        { n: String(gate.route!.latencyDays) },
+                      )}
                 </p>
               </div>
 
               {gate.provenance && (
                 <WhyThisNumber days={gate.latencyDays} provenance={gate.provenance} t={t} />
               )}
+
+              {/*
+                What delay costs, rather than what finishing "saves".
+
+                The earlier wording - "finish this and your money comes 5 days
+                sooner" - read as though the five days evaporated on a button
+                press. They do not. The latency is already inside the total; what
+                a member actually controls is the day the clock starts. So the
+                critical path is framed as the cost of waiting, and slack is
+                framed as the room you genuinely have.
+              */}
+              {bar &&
+                (bar.slack === 0 ? (
+                  <p className="mt-2.5 flex items-start gap-2 rounded-sm bg-signal-soft px-3 py-2 text-[14.5px] leading-snug text-signal">
+                    <Icon name="clock" size={16} className="mt-0.5 shrink-0" aria-hidden />
+                    <span>
+                      <span className="font-bold">{t('Start this today.')}</span>{' '}
+                      {fill(
+                        t(
+                          'Its {days} days are already inside your total - but they only begin when you do, so every day you wait adds a day.',
+                        ),
+                        { days: String(gate.latencyDays) },
+                      )}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="mt-2.5 text-[14px] leading-relaxed text-ink-500">
+                    {fill(
+                      t(
+                        'No rush on this one. It has {n} days of room - done within {n} days it costs you nothing, because something slower is running alongside it.',
+                      ),
+                      { n: String(bar.slack) },
+                    )}
+                  </p>
+                ))}
 
               {gate.status === 'blocked' ? (
                 <>
@@ -125,12 +186,6 @@ function GateRow({
                 >
                   {proc.explainOnly ? t('Show me how') : t('Fix this')}
                 </Link>
-              )}
-
-              {!gate.onCriticalPath && gate.status === 'red' && (
-                <p className="mt-2.5 text-[14px] leading-relaxed text-ink-500">
-                  {t('Fixing this will not move the date - something slower is ahead of it.')}
-                </p>
               )}
             </>
           )}

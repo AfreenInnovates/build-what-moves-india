@@ -8,6 +8,7 @@ import { SPEC } from './gates/spec';
 import { resolve } from './gates/resolve';
 import { deriveFacts, type MemberRecord, type ServiceRow, type Intake } from './gates/facts';
 import type { CaseFacts, GateId, Resolution } from './gates/types';
+import { SEEDED_RUNG, TYPICAL_DISPOSAL } from './escalation';
 
 export interface MemberRow extends MemberRecord {
   id: string;
@@ -169,6 +170,31 @@ export async function startCase(slug: string): Promise<string | null> {
     [caseId, 'case_opened', { gates: r.blockingCount }, r.totalDays],
   );
 
+  /*
+   * The one case where nothing is wrong.
+   *
+   * Every other demo member is stuck on something correctable. This one has all
+   * seven checks green, filed the claim, and then nothing happened - which is a
+   * different failure with a different remedy, and the only way to open the
+   * grievance ladder on a case that has no blockers to clear. The claim is
+   * back-dated so the 20-day settlement target has already passed.
+   */
+  if (member.scenario === 'stuck' && r.blockingCount === 0) {
+    const reference = `SG-${randomUUID().slice(0, 8).toUpperCase()}`;
+    await query(
+      `update cases set claim_status = 'submitted', claim_reference = $1,
+         claim_submitted_at = now() - interval '34 days', updated_at = now()
+       where id = $2`,
+      [reference, caseId],
+    );
+    await query(
+      `insert into events (case_id, type, payload, days_remaining) values ($1,$2,$3,$4)`,
+      [caseId, 'mock_claim_submitted', { reference }, r.totalDays],
+    );
+  }
+
+  await seedFirstRung(caseId);
+
   return caseId;
 }
 
@@ -275,7 +301,7 @@ export const loadCase = cache(async (caseId: string): Promise<CaseView | null> =
                      order by e.id desc)
                 from (select id, type, payload, days_remaining, at
                         from events where case_id = c.id
-                       order by id desc limit 12) e
+                       order by id desc limit 60) e
             ), '[]'::json) as history
        from cases c join members m on m.id = c.member_id
       where c.id = $1`,
@@ -486,6 +512,105 @@ async function persistGateStates(caseId: string, r: Resolution): Promise<void> {
           actor: g.actor,
         })),
       ),
+    ],
+  );
+}
+
+// ------------------------------------------------------------- escalation
+
+/**
+ * Record a simulated filing on the grievance ladder.
+ *
+ * Nothing leaves this machine. The reference number is generated here and the
+ * row lands in the same events table every other case action uses, so the
+ * ladder's state is derived from the log rather than held in a column that can
+ * drift out of step with it.
+ */
+export async function fileGrievance(caseId: string, rung: string): Promise<string | null> {
+  const row = await one<{ claim_status: string }>(
+    `select claim_status from cases where id = $1`,
+    [caseId],
+  );
+  if (!row) return null;
+
+  const already = await one<{ n: string }>(
+    `select count(*)::text as n from events
+      where case_id = $1 and type = 'grievance_filed' and payload->>'rung' = $2`,
+    [caseId, rung],
+  );
+  if (already && Number(already.n) > 0) return null;
+
+  const reference = `${rung === 'rti' ? 'RTI' : 'GRV'}-${randomUUID().slice(0, 8).toUpperCase()}`;
+  await query(
+    `insert into events (case_id, type, payload, days_remaining) values ($1,$2,$3,null)`,
+    [caseId, 'grievance_filed', { rung, reference }],
+  );
+  return reference;
+}
+
+/**
+ * Advance the demo clock and let the grievance come back the way they usually do.
+ *
+ * This is the honest bit. Simulating a government system working is easy and
+ * teaches nobody anything; what actually happens to most grievances is a
+ * disposal that closes the ticket without answering the question. So that is
+ * what the simulation does, and the product then has to deal with it.
+ */
+export async function simulateDisposal(
+  caseId: string,
+  rung: string,
+  dayCount: number,
+  disposalText: string,
+): Promise<void> {
+  const filed = await one<{ n: string }>(
+    `select count(*)::text as n from events
+      where case_id = $1 and type = 'grievance_filed' and payload->>'rung' = $2`,
+    [caseId, rung],
+  );
+  if (!filed || Number(filed.n) === 0) return;
+
+  const done = await one<{ n: string }>(
+    `select count(*)::text as n from events
+      where case_id = $1 and type = 'grievance_disposed' and payload->>'rung' = $2`,
+    [caseId, rung],
+  );
+  if (done && Number(done.n) > 0) return;
+
+  await query(
+    `insert into events (case_id, type, payload, days_remaining) values ($1,$2,$3,null)`,
+    [caseId, 'grievance_disposed', { rung, dayCount, disposalText }],
+  );
+}
+
+/**
+ * Start every case one rung up the ladder.
+ *
+ * EPFiGMS is EPFO's own grievance desk: same organisation, same login, and the
+ * step a member finds unaided. Seeding it as already filed and already disposed
+ * puts the case where the product actually has something to say - at the jump
+ * into CPGRAMS, which is a different department's portal and the part nobody
+ * makes easy. The disposal text is the one these grievances really come back
+ * with, so the demo opens on the failure rather than on a blank ladder.
+ */
+export async function seedFirstRung(caseId: string): Promise<void> {
+  const existing = await one<{ n: string }>(
+    `select count(*)::text as n from events
+      where case_id = $1 and type = 'grievance_filed' and payload->>'rung' = $2`,
+    [caseId, SEEDED_RUNG],
+  );
+  if (existing && Number(existing.n) > 0) return;
+
+  const reference = `GRV-${randomUUID().slice(0, 8).toUpperCase()}`;
+  await query(
+    `insert into events (case_id, type, payload, days_remaining) values ($1,$2,$3,null)`,
+    [caseId, 'grievance_filed', { rung: SEEDED_RUNG, reference }],
+  );
+  await query(
+    `insert into events (case_id, type, payload, days_remaining) values ($1,$2,$3,null)`,
+    [
+      caseId,
+      'grievance_disposed',
+      { rung: SEEDED_RUNG, dayCount: 30, disposalText: TYPICAL_DISPOSAL },
     ],
   );
 }

@@ -9,6 +9,8 @@ import { Icon } from '@/components/Icon';
 import { SECTIONS } from '@/lib/sections';
 import { getT } from '@/lib/i18n';
 import { transferStory, alerts, preFlight, fill } from '@/lib/insights';
+import { schedule } from '@/lib/schedule';
+import { CriticalPathTimeline } from '@/components/CriticalPathTimeline';
 
 export default async function DashboardPage() {
   const caseId = await currentCaseId();
@@ -24,6 +26,7 @@ export default async function DashboardPage() {
   const SHOWN = 4;
   const pre = preFlight(c);
   const startGate = r.gates.find((g) => g.id === r.startToday);
+  const plan = schedule(r);
 
   return (
     <main className="px-5 pb-28 pt-7 lg:pl-9 lg:pr-4">
@@ -128,6 +131,9 @@ export default async function DashboardPage() {
               </p>
             )}
           </section>
+
+          {/* the schedule behind the countdown */}
+          {plan && <CriticalPathTimeline data={plan} t={t} />}
 
           {/* pre-flight checklist */}
           <section className="rounded-md border border-ink-100 bg-white p-5" data-tour="gates">

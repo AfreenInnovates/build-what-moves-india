@@ -3,7 +3,11 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { startCase, applyFix, createOwnProfile, resetAllCases, loadCase, submitMockClaim } from '@/lib/case';
+import {
+  startCase, applyFix, createOwnProfile, resetAllCases, loadCase, submitMockClaim,
+  fileGrievance, simulateDisposal,
+} from '@/lib/case';
+import { LADDER, TYPICAL_DISPOSAL } from '@/lib/escalation';
 import type { GateId } from '@/lib/gates/types';
 import {
   employerFromToken,
@@ -156,5 +160,35 @@ export async function submitMockClaimAction() {
   const caseId = await currentCaseId();
   if (!caseId) redirect('/login');
   await submitMockClaim(caseId);
+  revalidatePath('/dashboard', 'layout');
+}
+
+/** Ladder ids the module actually defines. A form field is not a promise. */
+const RUNG_IDS = new Set<string>(LADDER.map((r) => r.id));
+
+export async function fileGrievanceAction(formData: FormData) {
+  const caseId = await currentCaseId();
+  if (!caseId) redirect('/login');
+  const rung = String(formData.get('rung') ?? '');
+  if (!RUNG_IDS.has(rung)) return;
+  await fileGrievance(caseId, rung);
+  revalidatePath('/dashboard', 'layout');
+}
+
+/**
+ * Move the demo clock forward and let the reply arrive.
+ *
+ * Kept as an explicit action rather than a background timer: a simulated
+ * deadline that passes while nobody is looking is indistinguishable from a
+ * progress bar, and the whole point of this screen is that the member sees the
+ * disposal happen and sees what it does not say.
+ */
+export async function advanceGrievanceClockAction(formData: FormData) {
+  const caseId = await currentCaseId();
+  if (!caseId) redirect('/login');
+  const rung = String(formData.get('rung') ?? '');
+  if (!RUNG_IDS.has(rung)) return;
+  const days = Number(formData.get('days') ?? 30);
+  await simulateDisposal(caseId, rung, Number.isFinite(days) ? days : 30, TYPICAL_DISPOSAL);
   revalidatePath('/dashboard', 'layout');
 }
