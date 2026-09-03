@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isLang, LANG_COOKIE } from '@/lib/i18n/langs';
 import { readJson } from '@/lib/guard';
+import { SECURE_COOKIE } from '@/lib/deploy';
 
 export const runtime = 'nodejs';
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
     // read by the switcher so it can show the current choice without a round trip
     httpOnly: false,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: SECURE_COOKIE,
     path: '/',
     maxAge: 60 * 60 * 24 * 365,
   });

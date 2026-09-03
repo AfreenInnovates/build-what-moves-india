@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { SECURE_COOKIE } from '@/lib/deploy';
 
 /**
  * A shared /c/<uuid> link still resumes a case — it sets the id in an httpOnly
@@ -17,7 +18,7 @@ export function middleware(req: NextRequest) {
   res.cookies.set('case_id', match[1], {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: SECURE_COOKIE,
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   });

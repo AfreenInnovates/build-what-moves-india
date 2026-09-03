@@ -16,6 +16,7 @@ import {
   requestByRef,
 } from '@/lib/employer';
 import { SPEC } from '@/lib/gates/spec';
+import { SECURE_COOKIE } from '@/lib/deploy';
 
 /** Gate ids the spec actually defines. A form field is not a promise. */
 const GATE_IDS = new Set<string>(SPEC.gates.map((g) => g.id));
@@ -45,7 +46,7 @@ export async function signIn(formData: FormData) {
   (await cookies()).set(COOKIE, caseId, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: SECURE_COOKIE,
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   });
@@ -62,7 +63,7 @@ export async function startFreshProfile(formData: FormData) {
   (await cookies()).set(COOKIE, caseId, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: SECURE_COOKIE,
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   });
